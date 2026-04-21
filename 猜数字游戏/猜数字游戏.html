@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+    <link rel="stylesheet" href="./猜数字游戏.css">
+</head>
+
+<body>
+    <div id="app">
+        <div id="panel-mode" class="panel active">
+            <h2 class="title">🎮 猜数字游戏</h2>
+
+            <div class="mode-tabs">
+                <button @click="switchMode('classic')" :class="{active: currentMode === 'classic'}">经典模式</button>
+                <button @click="switchMode('custom')" :class="{active: currentMode === 'custom'}">自定义模式</button>
+            </div>
+
+            <div class="classic-group" v-if="currentMode === 'classic'">
+                <button @click="setClassic(10,4,false)" :class="{active: isClassic(10,4,false)}">简单 4位数字·10次机会</button>
+                <button @click="setClassic(5,4,false)" :class="{active: isClassic(5,4,false)}">困难 4位数字·5次机会</button>
+                <button @click="setClassic(10,8,false)" :class="{active: isClassic(10,8,false)}">地狱 8位数字·10次机会</button>
+            </div>
+
+            <div class="custom-box" v-if="currentMode === 'custom'">
+                <div class="custom-item">
+                    <label>数字位数：</label>
+                    <select v-model="c_len" @change="computeScore">
+                        <option value="4">4位数字（基础分+{{baseMap[4][0]}}分）</option>
+                        <option value="6">6位数字（基础分+{{baseMap[6][0]}}分）</option>
+                        <option value="8">8位数字（基础分+{{baseMap[8][0]}}分）</option>
+                        <option value="10">10位数字（基础分+{{baseMap[10][0]}}分）</option>
+                    </select>
+                </div>
+
+                <div class="custom-item">
+                    <label>重复性：</label>
+                    <select v-model="c_repeat" @change="computeScore">
+                        <option value="0">数字不可重复 （基础分+0分）</option>
+                        <option value="1">数字可重复 （基础分+{{ repeatExtra }}分）</option>
+                    </select>
+                </div>
+
+                <div class="custom-item">
+                    <label>提示机制：</label>
+                    <select v-model="c_purple" @change="computeScore">
+                        <option value="0">经典模式 +20%（比例分+{{ purpleScore }}分）</option>
+                        <option value="1">紫色模式 +0%（比例分+0分）</option>
+                    </select>
+                </div>
+
+                <div class="custom-item">
+                    <label>输入上限：</label>
+                    <select v-model="c_max" @change="computeScore">
+                        <option value="5">5次 +30%（比例分+{{ score5 }}分）</option>
+                        <option value="6">6次 +24%（比例分+{{ score6 }}分）</option>
+                        <option value="7">7次 +18%（比例分+{{ score7 }}分）</option>
+                        <option value="8">8次 +12%（比例分+{{ score8 }}分）</option>
+                        <option value="9">9次 +6%（比例分+{{ score9 }}分）</option>
+                        <option value="10">10次 +0%（比例分+0分）</option>
+                    </select>
+                </div>
+
+                <div class="score-info">
+                    基础总分：{{ baseScore }} 分<br>
+                    比例总分：{{ addTotal }} 分<br>
+                    答对的最终总得分：{{ finalScore }} 分<br>
+                    答错的最终总得分：0分
+                </div>
+
+            </div>
+
+            <div>
+                <button class="jump-btn" @click="startGame">开始游戏</button>
+                <button class="jump-btn" style="margin-top:8px;background:#6c757d"
+                    @click="showPanel('score')">查看战绩</button>
+            </div>
+
+            <div>
+                <!-- 音频 -->
+                <audio ref="bgm" src="./Ayasa绚沙 - 蝶恋花﹒何处谣_H.mp3" loop preload="auto"></audio>
+                <button class="music-btn" @click="toggleMusic">
+                    {{ isPlaying ? '⏸️' : '🎵' }}
+                </button>
+            </div>
+
+        </div>
+
+        <div id="panel-game" class="panel">
+            <h2 class="title">🎮 游戏中</h2>
+
+            <div class="rule">
+                游戏规则：<br>
+                1. 随机生成 {{ digitLen }} 位数字（{{ repeatable ? '可重复' : '不可重复' }}）<br>
+                2. <span class="green">绿色</span> 该数字大小和当前位置都正确<br>
+                <span v-if="!purple">
+                    3. <span class="yellow">黄色</span> 存在该数字，但不是当前位置<br>
+                    4. <span class="red">红色</span> 任何位置都没有该数字
+                </span>
+                <span v-else>
+                    3. <span class="yellow">黄色</span> 该数字应在当前位置左侧<br>
+                    4. <span class="purple">紫色</span> 该数字应在当前位置右侧<br>
+                    5. <span class="red">红色</span> 任何位置都没有该数字
+                </span>
+            </div>
+
+            <div class="attempt">当前输入次数：{{ attempts }} / {{ maxAttempts }}</div>
+
+            <div class="input-box">
+                <input v-model="userInput" :maxlength="digitLen" :disabled="isWin||isLose" @keyup.enter="guess"
+                    oninput="value=value.replace(/[^\d]/g,'')" placeholder="请输入数字">
+                <button @click="guess" :disabled="isWin||isLose">确认</button>
+            </div>
+
+            <div class="msg">{{ message }}</div>
+
+            <!-- 位置提示功能 -->
+            <div class="hint-box">
+                <div class="hint-row">
+                    <label>查看第几位数字：</label>
+                    <select v-model="hintPos" class="hint-select">
+                        <option v-for="n in digitLen" :value="n-1">{{ n }}</option>
+                    </select>
+                    <button @click="showPosHint" class="hint-btn" :disabled="hintUsed >= hintMax">
+                        提示（剩{{hintMax-hintUsed}}次）
+                    </button>
+                </div>
+                <div class="hint-result" v-if="hintResult">{{ hintResult }}</div>
+            </div>
+
+            <div class="history" v-if="historyList.length">
+                <div class="history-item" v-for="(item,i) in historyList">
+                    第{{i+1}}次：
+                    <span class="digit" :class="item.colors[idx]" v-for="(d,idx) in item.digits">{{d}}</span>
+                </div>
+            </div>
+
+            <div class="result" v-if="isWin || isLose">
+                <span v-if="isWin">🎉 恭喜猜对！答案：{{ target }}</span>
+                <span v-if="isLose">💀 游戏结束！答案：{{ target }}</span>
+            </div>
+
+            <div class="end-btns">
+                <button class="btn-continue" @click="startGame">新游戏</button>
+                <button class="btn-back" @click="showPanel('mode')">返回模式</button>
+                <button class="btn-back" style="background:#07b" @click="showPanel('score')">查看战绩</button>
+            </div>
+
+        </div>
+
+        <div id="panel-score" class="panel">
+            <h2 class="title">🏆 最近{{maxRecordCount}}局战绩</h2>
+
+            <div class="record">
+                <div class="record-item" v-for="(item,i) in recentGames">
+                    <span>{{i+1}}. {{ item.modeName }}</span>
+                    <span>{{ item.step }}步 · {{ item.score }}分</span>
+                    <span :class="item.win ? 'win-text' : 'lose-text'">{{ item.win ? '胜' : '负' }}</span>
+                </div>
+                <div class="no-record" v-if="recentGames.length===0">暂无战绩</div>
+            </div>
+
+            <button class="clear-btn" @click="clearRecord">清空战绩</button>
+
+            <div class="end-btns" style="margin-top:12px;">
+                <button class="btn-back" @click="showPanel('mode')">返回模式</button>
+                <button class="btn-continue" @click="showPanel('game')">回到游戏</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+    <script src="./猜数字游戏.js"></script>
+</body>
+
+</html>
