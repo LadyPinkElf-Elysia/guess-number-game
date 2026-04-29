@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f0f8ff;
+            padding: 5px;
+        }
+
+        #app {
+            width: 90%;
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .panel {
+            background: white;
+            border: 2px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px #dbeafe;
+            margin-bottom: 16px;
+        }
+
+        .rule {
+            border: 1px solid #bfdbfe;
+            padding: 14px;
+            border-radius: 12px;
+            background: #f0f7ff;
+            margin: 14px 0;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .green {
+            color: green;
+            font-weight: bold;
+            font-size: 16px
+        }
+
+        .yellow {
+            color: #fa0;
+            font-weight: bold;
+            font-size: 16px
+        }
+
+        .red {
+            color: red;
+            font-weight: bold;
+            font-size: 16px
+        }
+
+        .purple {
+            color: #9900ff;
+            font-weight: bold;
+            font-size: 16px
+        }
+
+        button {
+            padding: 10px 10px;
+            font-size: 16px;
+            font-weight: 500;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #93c5fd;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #bae6fd;
+        }
+
+        button.active,
+        button:focus {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .item {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .item label {
+            min-width: 50px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .item select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #93c5fd;
+            border-radius: 8px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #93c5fd;
+            border-radius: 12px;
+            width: 60%;
+            text-align: center;
+        }
+
+        .text {
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            padding: 5px;
+            border-radius: 12px;
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .item:last-child {
+            justify-content: center;
+        }
+
+        .text-history {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body class="bg-blue-50 min-h-screen p-4">
+    <div id="app" class="max-w-md mx-auto">
+        <div class="panel" id="panel-mode" name="难度界面" v-show="panel['mode']">
+            <h2> 🎮 猜数字游戏 </h2>
+
+            <div>
+                <button @click=" chooseMode('classic') "> 经典模式 </button>
+                <button @click=" chooseMode('custom') "> 自定义模式 </button>
+            </div>
+
+            <div v-if=" game['Mode'] === 'classic' ">
+                <!-- v-for="(值,键) in 对象" 如果又有v-if又有v-for就用template来当工具人 -->
+                <!-- 把v-for挂在template上，v-if挂在子元素上 -->
+                <!-- 如果对象是一个字典，那么值就是字典的一个分量 -->
+                <template v-for=" (item,key) in classicMap ">
+                    <button @click="setGameClassic(key)">
+                        {{ item['name'] }} ( {{ item['len']}} 位数字 {{ item['max'] }} 次机会 )
+                    </button><br>
+                </template>
+            </div>
+
+            <div v-if="game['Mode']==='custom'">
+                <div class="item">
+                    <label>数字位数：</label>
+                    <select v-model="customMap['len']" @change="setGameCustom">
+                        <template v-for="(base,key) in baseMap">
+                            <option :value="key"> {{key}}位数字 基础分 +{{ base[false] }} </option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="item">
+                    <label>数字重复性：</label>
+                    <select v-model="customMap['repeat']" @change="setGameCustom">
+                        <option value="1"> 可重复 基础分 +{{ scores['repeat'] }}分 </option>
+                        <option value="0" checked> 不可重复 基础分 + 0分 </option>
+                    </select>
+                </div>
+
+                <div class="item">
+                    <label>提示机制：</label>
+                    <select v-model="customMap['purple']" @change="setGameCustom">
+                        <option value="0" checked> 经典 比例分+20% （+{{ scores['purple'] }}分） </option>
+                        <option value="1"> 紫色 比例分+0% （+ 0分） </option>
+                    </select>
+                </div>
+
+                <div class="item">
+                    <label>输入次数：</label>
+                    <select v-model="customMap['max']" @change="setGameCustom">
+                        <template v-for="(score,key) in scoreMap">
+                            <option :value="key">
+                                {{key}}次 比例分{{score['rate']*100}}% （+{{score['score']}}分）
+                            </option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="text">
+                    <span> 基础分： {{ scores['base'] }} 分 </span><br>
+                    <span> 比例分： {{ scores['ratio'] }} 分 </span><br>
+                    <span> 最终分： {{ scores['final'] }} 分 </span><br>
+                    <span> 注意：若游戏失败，最终分为0分 </span><br>
+                </div>
+            </div>
+
+            <div>
+                <button @click="startGame"> 开始游戏 </button>
+                <button @click="showPanel('score')"> 查看战绩 </button>
+            </div>
+
+            <div class="item">
+                <select v-model="Music['index']">
+                    <template v-for="(item,key) in AudioSrc">
+                        <option :value="key"> {{ item['name'] }} </option>
+                    </template>
+                </select>
+                <audio ref="bgm" loop preload="auto"></audio>
+                <button @click="play"> {{ Music['isPlaying'] ? '⏸️' : '🎵' }} </button>
+            </div>
+
+        </div>
+
+        <div class="panel" id="panel-game" name="游戏界面" v-show="panel['game']">
+            <h2> 🎮 游戏中</h2>
+
+            <div class="rule">
+                <span> 当前难度：{{ game['Name'] }} (难度分：{{ scores['final'] }}) </span><br>
+                <span> 游戏规则：</span><br>
+                <span> 1.随机生成 {{ game['Len'] }} 位数字（{{ game['Repeat'] ? '可重复' : '不可重复'}}）</span><br>
+                <span> 2.<span class="green">绿色数字</span> 该数字大小和当前位置都正确 </span><br>
+                <span> 3.<span class="red">红色数字</span> 任何位置都没有该数字 </span><br>
+                <span v-if=" !game['Purple'] ">
+                    <span> 4.<span class="yellow">黄色数字</span> 该数字不应在当前位置 </span><br>
+                </span>
+                <span v-else>
+                    <span> 4.<span class="yellow">黄色数字</span> 该数字应在当前位置左侧 </span><br>
+                    <span> 5.<span class="purple">紫色数字</span> 该数字应在当前位置右侧 </span><br>
+                </span>
+            </div>
+
+            <div class="text"><span> 当前输入次数： {{ game['Attempts'] }}/{{ game['Max'] }} </span></div>
+
+            <div>
+                <input type="text" v-model="game['Input']" :maxlength="game['Len']" @input="onInput"
+                    :placeholder="` 请输入${game['Len']}位数字 `" :disabled="game['Win']||game['Lost']">
+                <button @click="guess" :disabled="confirm()">确认</button>
+            </div>
+
+            <div class="text"><span> 提示：{{ game['Msg'] }} </span></div>
+
+            <div>
+                <div class="item">
+                    <label>查看第几位数字：</label>
+
+                    <select v-model="hint['pos']">
+                        <template v-for="n in game['Len']">
+                            <option :value="n-1"> {{ n }} </option>
+                        </template>
+                    </select>
+
+                    <button @click="showPosHint" :disabled="hint['used']>=hint['max']">
+                        提示（剩 {{ hint['max']-hint['used'] }} 次 ）
+                    </button>
+
+                </div>
+
+                <div v-if="hint['result']!==[]" class="text">
+                    <template v-for="h in hint['result']">
+                        <span> {{h}} </span><br>
+                    </template>
+                </div>
+            </div>
+
+            <div v-if="game['List'].length !== 0">
+                <div v-for="(list,i) in game['List']" class="text history-row">
+                    第{{i+1}}次：
+                    <template v-for="(li,index) in list.digits">
+                        <span :class="list.colors[index]"> {{ li }} </span>
+                    </template>
+                </div>
+            </div>
+
+            <div>
+                <button @click="startGame">新游戏</button>
+                <button @click="showPanel('mode')">返回模式</button>
+                <button @click="showPanel('score')">查看战绩</button>
+            </div>
+
+        </div>
+
+        <div class="panel" id="panel-score" name="战绩界面" v-show=" panel['score'] ">
+            <h2> 🏆最近 {{ history['max'] }} 局战绩 </h2>
+
+            <div class="text">
+                <div v-for="(h,i) in history['recent']">
+                    {{i+1}}.{{h['gameName']}}
+                    {{h['attempt']}}次/{{h['max']}}次
+                    {{h['score']}}分 {{h['win']?'胜':'负'}}
+                </div>
+                <div v-if="history['recent'].length===0">暂无战绩</div>
+            </div>
+
+            <div>
+                <button @click="clearRecord">清空战绩</button>
+                <button @click=" showPanel('mode') ">返回模式</button>
+                <button @click=" showPanel('game') ">返回游戏</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp: myApp } = Vue
+        myApp({
+            data() {
+                return {
+                    classicMap: {
+                        'easy': { 'name': '经典-简单', 'len': '4', 'repeat': '0', 'purple': '0', 'max': '10', },
+                        'hard': { 'name': '经典-困难', 'len': '6', 'repeat': '0', 'purple': '0', 'max': '10', },
+                        'hell': { 'name': '经典-地狱', 'len': '8', 'repeat': '0', 'purple': '0', 'max': '10', },
+                    },
+                    customMap: { 'len': '4', 'repeat': '0', 'purple': '0', 'max': '10', },
+                    baseMap: {
+                        4: { false: 35, true: 40 },
+                        6: { false: 50, true: 60 },
+                        8: { false: 65, true: 80 },
+                        10: { false: 80, true: 100 },
+                    },
+                    scoreMap: {
+                        5: { 'score': 0, 'rate': 0.30 },
+                        6: { 'score': 0, 'rate': 0.24 },
+                        7: { 'score': 0, 'rate': 0.18 },
+                        8: { 'score': 0, 'rate': 0.12 },
+                        9: { 'score': 0, 'rate': 0.06 },
+                        10: { 'score': 0, 'rate': 0.00 },
+                    },
+                    purpleRate: 0.2,
+                    game: {
+                        'Mode': 'classic',
+                        'Level': '',
+                        'Name': '',
+
+                        'Len': 4,
+                        'Repeat': false,
+                        'Purple': false,
+                        'Max': 10,
+
+                        'Input': '',
+                        'Target': '',
+                        'Attempts': 0,
+                        'List': [],
+                        'Color': [],
+                        'Msg': '',
+                        'Win': false,
+                        'Lost': false,
+                    },
+                    hint: {
+                        'pos': '0',
+                        'used': 0,
+                        'max': 2,
+                        'result': [],
+                    },
+                    scores: {
+                        'base': 0,
+                        'repeat': 0,
+                        'purple': 0,
+                        'attempt': 0,
+                        'ratio': 0,
+                        'final': 0,
+                    },
+                    AudioSrc: {
+                        '1': { 'name': '蝶恋花', 'src': "./蝶恋花.mp3" },
+                        '2': { 'name': '熙熙攘攘我们的城市', 'src': "./熙熙攘攘我们的城市.mp3" },
+                        '3': { 'name': '世末歌者', 'src': "./世末歌者.mp3" },
+                        '4': { 'name': '千本樱', 'src': "./千本樱.mp3" },
+                        '5': { 'name': '大荒寻梦录', 'src': "./大荒寻梦录.mp3" },
+                        '6': { 'name': '红昭愿', 'src': "./红昭愿.mp3" },
+                    },
+                    Music: {
+                        'index': '1',
+                        'isPlaying': false,
+                        'src': "./背景音乐/蝶恋花.mp3",
+                    },
+                    panel: {
+                        'mode': true,
+                        'game': false,
+                        'score': false,
+                    },
+                    history: {
+                        'recent': [],   //历史战绩
+                        'max': 8,       //最多战绩
+                    }
+
+                }//
+
+            },
+
+            created() {
+                this.loadRecord();
+                this.cheatKey();
+                this.computeScore();
+            },
+
+            methods: {
+                clearGameMode: function () {          //清空模式
+                    this.game['Mode'] = 'classic';
+                    this.game['Level'] = '';
+                    this.game['Name'] = '';
+                },
+
+                clearGameData: function () {        //清空数据
+                    this.game['Len'] = 4;
+                    this.game['Repeat'] = false;
+                    this.game['Purple'] = false;
+                    this.game['Max'] = 10;
+                },
+
+                clearGameState: function () {       //清空状态
+                    this.game['Input'] = '';
+                    this.game['Target'] = '';
+                    this.game['Attempts'] = 0;
+                    this.game['List'] = [];
+                    this.game['Color'] = [];
+                    this.game['Msg'] = '';
+                    this.game['Win'] = false;
+                    this.game['Lost'] = false;
+                },
+
+                clearHint: function () {            //清空提示
+                    this.hint['pos'] = '0';
+                    this.hint['used'] = 0;
+                    this.hint['result'] = [];
+                },
+
+                clearGame: function () {               //重置游戏
+                    this.clearGameMode();
+                    this.clearGameData();
+                    this.clearGameState();
+                    this.clearHint();
+                },
+
+                clearRecord: function () {          //清空战绩
+                    if (!confirm('确定清空战绩？该操作不可逆❗')) {
+                        return;
+                    }
+                    this.history['recent'] = [];
+                    this.saveRecord();
+                },
+
+                chooseMode: function (modeName) {
+                    this.clearGame();
+                    this.game['Mode'] = modeName;
+
+                    if (modeName === 'classic') {
+                        this.setGameClassic('easy');//默认值
+                    }
+                    if (modeName === 'custom') {
+                        this.setGameCustom();
+                        this.game['name'] = '自定义4位';
+                    }
+                },
+
+                setGameClassic: function (level) {
+                    this.game['Level'] = level;
+                    this.game['Name'] = this.classicMap[level]['name'];
+                    this.game['Len'] = Number(this.classicMap[level]['len']);           //字符串0/1转数字
+                    this.game['Repeat'] = (this.classicMap[level]['repeat'] === '1');   //字符串0/1转布尔值
+                    this.game['Purple'] = (this.classicMap[level]['purple'] === '1');
+                    this.game['Max'] = Number(this.classicMap[level]['max']);
+                    this.computeScore();
+                },
+
+                setGameCustom: function () {
+                    this.game['Name'] = `自定义${this.customMap['len']}位`;
+                    this.game['Len'] = Number(this.customMap['len']);
+                    this.game['Repeat'] = (this.customMap['repeat'] === '1');
+                    this.game['Purple'] = (this.customMap['purple'] === '1');
+                    this.game['Max'] = Number(this.customMap['max']);
+                    this.computeScore();
+                },
+
+                computeScore: function () {
+                    let len = this.game['Len'];
+                    let rep = this.game['Repeat'];
+                    let pur = this.game['Purple'];
+                    let max = this.game['Max'];
+                    let base = this.baseMap[len][rep];
+
+                    this.scores['base'] = base;
+                    this.scores['repeat'] = this.baseMap[len][true] - this.baseMap[len][false];
+                    this.scores['purple'] = Math.round(base * this.purpleRate);
+                    let purScore = pur ? 0 : this.scores['purple'];
+
+                    let keys = Object.keys(this.scoreMap);  //获得一个字典里的所有键组成的数组
+
+                    //let key of keys是循环遍历对象的值，let key in keys是循环遍历对象的序号
+                    //例如：let key of keys，得到的是数组的值，let key in keys，得到的是数组的下标
+                    for (let key of keys) {
+                        this.scoreMap[key]['score'] = Math.round(base * this.scoreMap[key]['rate']);
+                    }
+
+                    this.scores['attempt'] = this.scoreMap[max]['score'];
+                    this.scores['ratio'] = purScore + this.scores['attempt'];
+                    this.scores['final'] = base + this.scores['ratio'];
+                },
+
+                play: function () {
+                    let audio = this.$refs.bgm;
+                    let i = this.Music['index'];
+                    let src = this.AudioSrc[i]['src'];
+
+                    if (!audio.paused) {    //判断是否已经暂停
+                        audio.pause();      //暂停当前音频或视频
+                        this.Music['isPlaying'] = false;
+                    } else {
+                        audio.src = src;
+                        audio.load();       //重新加载音频或视频
+                        audio.play();       //开始播放音频或视频
+                        this.Music['isPlaying'] = true;
+                    }
+                },
+
+                startGame: function () {
+                    this.clearGameState();  //保留当前模式和数据，仅清除对局状态和提示重开一把
+                    this.clearHint();
+
+                    this.game['Target'] = this.getTarget();
+                    this.game['Msg'] = '新局开始';
+
+                    this.showPanel('game');
+                },
+
+                showPanel: function (name) {
+                    for (let key in this.panel) {
+                        this.panel[key] = false;
+                    }
+                    this.panel[name] = true;
+                },
+
+                showAnswer: function () {
+                    alert((this.game['Target'] !== '') ? `答案是：${this.game['Target']} ✅` : " 还没开始游戏 ❗");
+                },
+
+                showPosHint: function () {
+                    if (this.game['Win'] || this.game['Lost']) {
+                        this.game['Msg'] = '游戏已结束';
+                        return;
+                    }
+                    if (this.game['Target'] === '') {
+                        this.game['Msg'] = '请先开始游戏';
+                        return;
+                    }
+
+                    let pos = Number(this.hint['pos']);
+                    let num = this.game['Target'][pos];
+                    let f = `第 ${pos + 1} 位数字是：${num}`;
+
+                    if (this.hint['result'].includes(f)) {
+                        this.game['Msg'] = '该位置已提示过，不可重复提示';
+                        return;
+                    }
+
+                    this.hint['result'].push(f);    //push()方法是往数组后加东西，unshift()方法是往数组前加东西
+                    this.hint['used']++;
+                },
+
+                cheatKey: function () {
+                    const self = this;
+                    document.addEventListener("keydown", (e) => {
+                        if (e.key === "s") {
+                            e.preventDefault();
+                            self.showAnswer();
+                        }
+                    });
+                },
+
+                getTarget: function () {
+                    let s = '';
+                    let arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                    let len = this.game['Len'];
+                    let rep = (!this.game['Repeat']);
+                    for (let k = 0; k < len; k++) {
+                        let i = Math.floor(Math.random() * arr.length);
+                        s += arr[i];
+                        if (rep) {
+                            arr.splice(i, 1);
+                        }
+                    }
+                    return s;
+                },
+
+                onInput: function () {
+                    this.game['Input'] = this.game['Input'].replace(/[^\d]/g, '');
+                    //  /**/：正则表达式包裹符 \d：代表任意数字 0-9 [^\d]：^ 在方括号里 = 取反 → 意思：不是数字的所有字符 
+                    //  g：全局匹配（global）→ 不止删第一个，全文全部删掉
+                    //  replace(匹配内容, 替换内容) 匹配：所有非数字 替换成：空字符串 '' = 直接删除
+                },
+
+                guess: function () {
+                    let input = this.game['Input'];
+                    let target = this.game['Target'];
+                    let res = this.getResult(input, target);//获得颜色数组
+                    this.game['List'].push({
+                        digits: input.split(''),    //对应数字，split('')把字符串切成一个个字符
+                        colors: res,                 //对应颜色
+                    });                             //创建键值对
+
+                    this.game['Attempts']++;
+
+                    if (input === target) {
+                        this.game['Win'] = true;
+                        this.game['Msg'] = `恭喜猜对，答案是${this.game['Target']}`;
+                        this.addRecord();
+                    } else if (this.game['Attempts'] >= this.game['Max']) {
+                        this.game['Lost'] = true;
+                        this.game['Msg'] = `游戏结束，答案是${this.game['Target']}`;
+                        this.addRecord();
+                    }
+
+                    this.game['Input'] = '';
+                },
+
+                getResult: function (userInput, target) {
+                    let u = userInput.split('');
+                    let t = target.split('');
+                    let len = userInput.length;     //length方法，求长度
+                    let result = [];
+
+                    for (let i = 0; i < len; i++) {
+                        result[i] = (u[i] === t[i]) ? 'green' : '';
+                    }
+
+                    if (!this.game['Purple']) {
+                        for (let i = 0; i < len; i++)
+                            if (result[i] === '') result[i] = (t.includes(u[i])) ? 'yellow' : 'red';
+                    } else {
+                        for (let i = 0; i < len; i++) {
+                            if (result[i] === '') {
+                                let pos = t.indexOf(u[i]);
+                                if (pos !== -1) {
+                                    result[i] = (pos < i) ? 'yellow' : 'purple';
+                                } else {
+                                    result[i] = 'red';
+                                }
+                            }
+                        }
+                    }
+                    return result;
+                },
+
+                confirm: function () {
+                    if (this.game['Win'] || this.game['Lost']) {
+                        return true;
+                    }
+
+                    return (this.game['Input'].length == this.game['Len']) ? false : true;
+                },
+
+                addRecord: function () {
+                    this.history['recent'].unshift({
+                        'gameName': this.game['Name'],
+                        'attempt': this.game['Attempts'],
+                        'max': this.game['Max'],
+                        'score': (this.game['Win']) ? this.scores['final'] : 0,
+                        'win': this.game['Win'],
+                    });
+
+                    if (this.history['recent'].length > this.history['max']) {
+                        this.history['recent'].splice(this.history['max']);
+                        //修改数组（删除、添加、替换），splice(1, 1) // 从下标 1 删 1 个，splice(8) // 保留前 8 个，splice(1, 0, 99) // 在下标1插入99
+                    }
+
+                    this.saveRecord();
+                },
+
+                saveRecord: function () {
+                    localStorage.setItem('RecentGames', JSON.stringify(this.history['recent']));
+                },
+
+                loadRecord: function () {
+                    let r = localStorage.getItem('RecentGames');
+                    if (r) {
+                        this.history['recent'] = JSON.parse(r);
+                    }
+                },
+
+
+            }
+        }).mount('#app')
+    </script>
+
+</body>
+
+</html>
