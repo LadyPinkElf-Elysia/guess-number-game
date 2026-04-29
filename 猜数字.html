@@ -26,7 +26,7 @@
         }
 
         .panel {
-            background: white;
+            background: rgb(255, 255, 255);
             border: 2px solid #bfdbfe;
             border-radius: 16px;
             padding: 24px;
@@ -141,6 +141,18 @@
         .text-history {
             text-align: center;
         }
+
+        .text:empty {
+            display: none;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: transparent;
+        }
+
+        .text:not(:empty) {
+            display: block;
+        }
     </style>
 </head>
 
@@ -213,16 +225,6 @@
             <div>
                 <button @click="startGame"> 开始游戏 </button>
                 <button @click="showPanel('score')"> 查看战绩 </button>
-            </div>
-
-            <div class="item">
-                <select v-model="Music['index']">
-                    <template v-for="(item,key) in AudioSrc">
-                        <option :value="key"> {{ item['name'] }} </option>
-                    </template>
-                </select>
-                <audio ref="bgm" loop preload="auto"></audio>
-                <button @click="play"> {{ Music['isPlaying'] ? '⏸️' : '🎵' }} </button>
             </div>
 
         </div>
@@ -378,19 +380,6 @@
                         'ratio': 0,
                         'final': 0,
                     },
-                    AudioSrc: {
-                        '1': { 'name': '蝶恋花', 'src': "./蝶恋花.mp3" },
-                        '2': { 'name': '熙熙攘攘我们的城市', 'src': "./熙熙攘攘我们的城市.mp3" },
-                        '3': { 'name': '世末歌者', 'src': "./世末歌者.mp3" },
-                        '4': { 'name': '千本樱', 'src': "./千本樱.mp3" },
-                        '5': { 'name': '大荒寻梦录', 'src': "./大荒寻梦录.mp3" },
-                        '6': { 'name': '红昭愿', 'src': "./红昭愿.mp3" },
-                    },
-                    Music: {
-                        'index': '1',
-                        'isPlaying': false,
-                        'src': "./背景音乐/蝶恋花.mp3",
-                    },
                     panel: {
                         'mode': true,
                         'game': false,
@@ -466,7 +455,6 @@
                     }
                     if (modeName === 'custom') {
                         this.setGameCustom();
-                        this.game['name'] = '自定义4位';
                     }
                 },
 
@@ -481,7 +469,7 @@
                 },
 
                 setGameCustom: function () {
-                    this.game['Name'] = `自定义${this.customMap['len']}位`;
+                    this.game['Name'] = (this.game['Name'] === '') ? '自定义4位' : `自定义${this.customMap['len']}位`;
                     this.game['Len'] = Number(this.customMap['len']);
                     this.game['Repeat'] = (this.customMap['repeat'] === '1');
                     this.game['Purple'] = (this.customMap['purple'] === '1');
@@ -512,22 +500,6 @@
                     this.scores['attempt'] = this.scoreMap[max]['score'];
                     this.scores['ratio'] = purScore + this.scores['attempt'];
                     this.scores['final'] = base + this.scores['ratio'];
-                },
-
-                play: function () {
-                    let audio = this.$refs.bgm;
-                    let i = this.Music['index'];
-                    let src = this.AudioSrc[i]['src'];
-
-                    if (!audio.paused) {    //判断是否已经暂停
-                        audio.pause();      //暂停当前音频或视频
-                        this.Music['isPlaying'] = false;
-                    } else {
-                        audio.src = src;
-                        audio.load();       //重新加载音频或视频
-                        audio.play();       //开始播放音频或视频
-                        this.Music['isPlaying'] = true;
-                    }
                 },
 
                 startGame: function () {
