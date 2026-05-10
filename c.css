@@ -1,0 +1,179 @@
+html{
+    margin: 10;
+    padding: 10;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f0f8ff;
+    padding: 10px;
+    min-height: 100vh;
+}
+
+#app {
+    width: 95%;
+    height: 100%;
+    max-width: 600px;
+    margin: 10px auto;
+    text-align: center;
+}
+
+.panel {
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 2px solid #bfdbfe;
+    border-radius: 16px;
+    padding: 64px 36px;
+    box-shadow: 0 4px 12px #dbeafe;
+    margin-bottom: 5px;
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: overlay;
+}
+
+.rule {
+    border: 1px solid #bfdbfe;
+    color: deeppink;
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(240, 247, 255, 0.3);
+    margin: 14px 0;
+    line-height: 1.6;
+    text-align: left;
+}
+
+.green {
+    color: green;
+    font-weight: bold;
+    font-size: 16px
+}
+
+.yellow {
+    color: #fa0;
+    font-weight: bold;
+    font-size: 16px
+}
+
+.red {
+    color: red;
+    font-weight: bold;
+    font-size: 16px
+}
+
+.purple {
+    color: #9900ff;
+    font-weight: bold;
+    font-size: 16px
+}
+
+.pink {
+    color: deeppink;
+    font-weight: bold;
+    font-size: 16px
+}
+
+button {
+    padding: 10px 10px;
+    font-size: 16px;
+    font-weight: 500;
+    background-color: rgba(224, 242, 254, 0.3);
+    color: deeppink;
+    border: 1px solid rgba(147, 197, 253, 0.4);
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 5px;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: rgba(186, 230, 253, 0.6);
+}
+
+button.active,
+button:focus {
+    background-color: rgba(59, 130, 246, 0.5);
+    color: white;
+    border-color: rgba(37, 99, 235, 0.5);
+}
+
+button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.item {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.item label {
+    color: deeppink;
+    min-width: 50px;
+    text-align: left;
+    font-weight: bold;
+    flex: 1 1 30%;
+}
+
+.item select {
+    flex: 1 1 40%;
+    padding: 10px;
+    border: 1px solid rgba(147, 197, 253, 0.5);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    color: deeppink;
+}
+
+.item span{
+    flex: 1 1 30%;
+}
+
+.item:last-child {
+    justify-content: center;
+}
+
+input[type="text"] {
+    padding: 10px;
+    border: 1px solid rgba(147, 197, 253, 0.6);
+    border-radius: 12px;
+    width: 60%;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+input[type="file"],
+input[type="checkbox"] {
+    display: none;
+}
+
+.text {
+    background: rgba(248, 250, 252, 0.4);
+    border: 1px solid rgba(219, 234, 254, 0.4);
+    color: deeppink;
+    padding: 5px;
+    border-radius: 12px;
+    margin: 5px 0;
+    line-height: 1.5;
+}
+
+.text-history {
+    text-align: center;
+}
+
+.text:empty {
+    display: none;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+}
+
+.text:not(:empty) {
+    display: block;
+}

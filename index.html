@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+    <link rel="stylesheet" href="./c.css">
+</head>
+
+<body>
+    <div id="app">
+        <div class="panel" id="panel-loading" name="加载界面" v-show="panel['loading']">
+            <h2><span class="pink">爱莉希雅的魔法♪</span></h2>
+
+            <img :src="elysiaImgSrc['1']['src']" alt="爱莉打扮中♪" style="width: 80%;">
+
+            <div>
+                <button @click="showPanel('mode')"><span> 与爱莉共舞♪ </span></button>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-mode" name="难度界面" v-show="panel['mode']">
+            <h2><span class="pink"> 妖精的小游戏♪ </span></h2>
+
+            <div>
+                <button @click=" chooseMode('classic') ">
+                    <img :src="elysiaImgSrc['2']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                    <span>往世乐土</span>
+                </button>
+                <button @click=" chooseMode('custom') ">
+                    <img :src="elysiaImgSrc['3']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                    <span>永世乐土</span>
+                </button>
+            </div>
+
+            <div v-if=" game['mode'].Mode === 'classic' ">
+                <!-- v-for="(值,键) in 对象" 如果又有v-if又有v-for就用template来当工具人 -->
+                <!-- 把v-for挂在template上，v-if挂在子元素上 -->
+                <!-- 如果对象是一个字典，那么值就是字典的一个分量 -->
+                <template v-for=" (item,key) in classicMap " :key="key">
+                    <button @click="setGameClassic(key)">
+                        <img :src="classicImgSrc[key]['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                        <span class="pink">{{ item['name'] }} ( {{ item['len']}} 位数字 {{ item['max'] }} 次机会 )</span>
+                    </button><br>
+                </template>
+            </div>
+
+            <div v-if="game['mode'].Mode==='custom'">
+                <div class="item">
+                    <label>数字位数：</label>
+                    <select v-model="customMap['len']" @change="setGameCustom">
+                        <template v-for="(base,key) in baseMap" :key="key">
+                            <option :value="key"> {{key}}位数字 基础分+{{ base[false] }}分 </option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="item">
+                    <label>数字重复性：</label>
+                    <select v-model="customMap['repeat']" @change="setGameCustom">
+                        <option value="1"> 可重复 基础分+{{ scores['repeat'] }}分 </option>
+                        <option value="0"> 不可重复 基础分+0分 </option>
+                    </select>
+                </div>
+
+                <div class="item">
+                    <label>提示机制：</label>
+                    <select v-model="customMap['purple']" @change="setGameCustom">
+                        <option value="0"> 经典 比例分+{{purpleRate*100}}% （+{{ scores['purple'] }}分） </option>
+                        <option value="1"> 紫色 比例分+0% （+0分） </option>
+                    </select>
+                </div>
+
+                <div class="item">
+                    <label>输入次数：</label>
+                    <select v-model="customMap['max']" @change="setGameCustom">
+                        <template v-for="(score,key) in scoreTable" :key="key">
+                            <option :value="key">
+                                {{key}}次 比例分{{score['rate']*100}}% （+{{score['score']}}分）
+                            </option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="text">
+                    <span> 基础分： {{ scores['base'] }} 分 </span><br>
+                    <span> 比例分： {{ scores['ratio'] }} 分 </span><br>
+                    <span> 胜利分： {{ scores['final'] }} 分 </span><br>
+                    <span> 注意：若游戏失败，最终分为0分 </span><br>
+                </div>
+            </div>
+
+            <div>
+                <button @click="showPanel('settings')"> 设置 </button>
+                <button @click="startGame"> 开始游戏 </button>
+                <button @click="showPanel('score')"> 查看战绩 </button>
+            </div>
+
+        </div>
+
+        <div class="panel" id="panel-game" name="游戏界面" v-show="panel['game']">
+            <h2><span class="pink"> 妖精的小游戏♪ </span></h2>
+
+            <div class="rule">
+                <img :src="elysiaImgSrc['4']['src']" alt="爱莉打扮中♪" style="width: 20%;"><br>
+                <span> 当前难度：{{ gameName }} (难度分：{{ scores['final'] }}) </span><br>
+                <span> 游戏规则：</span><br>
+                <span> 1.随机生成 {{ game['data']['Len'] }} 位数字（{{ game['data']['Repeat'] ? '可重复' : '不可重复'}}）</span><br>
+                <span> 2.<span class="green">绿色数字</span> ：该数字答案中存在且在当前位置 </span><br>
+                <span> 3.<span class="red">红色数字</span> ：该数字答案中不存在 </span><br>
+                <span v-if=" !game['Purple'] ">
+                    <span> 4.<span class="yellow">黄色数字</span> ：该数字答案中存在，但不在当前位置 </span><br>
+                </span>
+                <span v-else>
+                    <span> 4.<span class="yellow">黄色数字</span> ：该数字答案中存在，但在当前位置左侧 </span><br>
+                    <span> 5.<span class="purple">紫色数字</span> ：该数字答案中存在，但在当前位置右侧 </span><br>
+                </span>
+                <span v-if="settingMap['dynamic']==='1' ">
+                    <strong>颜色处理机制：</strong><br>
+                    绿色数字会影响到黄色和红色的统计<br>
+                    例如猜测1110，答案为1001：<br>
+                    动态的猜测结果：
+                    <span class="green">1</span><span class="yellow">1</span>
+                    <span class="red">1</span><span class="yellow">0</span>
+                    （答案只有两个1，第三个1被标红）<br>
+                    非动态的猜测结果：
+                    <span class="green">1</span><span class="yellow">1</span>
+                    <span class="yellow">1</span><span class="yellow">0</span>
+                    （重复数字不会变红，只能是黄和绿）<br>
+                    <b>动态会统计重复的数字，非动态不会</b>
+                </span><br>
+            </div>
+
+            <div class="text"><span> 当前输入次数： {{ game['state']['Attempts'] }}/{{ game['data']['Max'] }} </span></div>
+
+            <div>
+                <input type="text" v-model="game['state']['Input']" :maxlength="game['data']['Len']"
+                    @input="onInputGame" :placeholder="` 要输入${game['data']['Len']}位数字哦♪ `"
+                    :disabled="game['state']['Win']||game['state']['Lost']">
+                <button @click="guess" :disabled="isConfirmDisabled">确认</button>
+            </div>
+
+            <div class="text">
+                <img :src="elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                <span> 妖精爱莉的贴心小提示：{{ game['state']['Msg'] }} </span>
+                <div v-if="game['state']['Win']">
+                    <img :src="elysiaImgSrc['6']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                </div>
+                <div v-if="game['state']['Lost']">
+                    <img :src="elysiaImgSrc['7']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                </div>
+            </div>
+
+            <div>
+                <div class="item">
+                    <label>
+                        <span>妖精爱莉的魔法♪</span>
+                    </label>
+
+                    <select v-model="game['hint']['pos']">
+                        <template v-for="n in game['data']['Len']" :key="n">
+                            <option :value="n-1"> 第{{ n }}位数字 </option>
+                        </template>
+                    </select>
+
+                    <button @click="showPosHint" :disabled="game['hint']['used']>=game['hint']['max']">
+                        施法♪（剩 {{ remainingHints }} 次 ）
+                    </button>
+
+                </div>
+
+                <div v-if="game['hint']['result'].length > 0" class="text">
+                    <template v-for="(h,index) in game['hint']['result']" :key="index">
+                        <span> 妖精的魔法生效了♪ {{h}} </span><br>
+                    </template>
+                </div>
+            </div>
+
+            <div v-if="game['state']['List'].length > 0">
+                <div v-for="(list,i) in game['state']['List']" class="text history-row" :key="i">
+                    第{{i+1}}次猜测：
+                    <template v-for="(li,index) in list['digits']">
+                        <span :class="list['colors'][index]"> {{ li }} </span>
+                    </template>
+                </div>
+            </div>
+
+            <div>
+                <button @click="showPanel('mode')">返回模式</button>
+                <button @click="startGame">重开一把</button>
+                <button @click="showPanel('score')">查看战绩</button>
+            </div>
+
+        </div>
+
+        <div class="panel" id="panel-score" name="战绩界面" v-show=" panel['score'] ">
+            <h2 class="pink"> 查看最近 {{ settingMap['historyMax'] }} 局战绩 </h2>
+
+            <img :src="elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 80%;">
+
+            <div class="text">
+                <div v-for="(h,i) in history['recent']" :key="i">
+                    <label :for="`locked-${i}`">
+                        {{ h['locked'] ? '已锁定' : '未锁定' }}
+                    </label>
+                    <input type="checkbox" :id="`locked-${i}`" :checked="h['locked']" @change="switchLock(i)">
+                    <span>
+                        第{{i+1}}局.{{h['gameName']}}
+                        {{h['attempt']}}次/{{h['max']}}次
+                        {{h['score']}}分 {{h['win']?'胜':'负'}}
+                    </span>
+                    <button @click="openReplay(h)"> 回放 </button>
+                </div>
+                <div v-if="history['recent'].length===0">暂无战绩</div>
+            </div>
+
+            <div>
+                <button @click=" showPanel('mode') ">返回模式</button>
+                <button @click="clearRecord">清空战绩</button>
+            </div>
+
+        </div>
+
+        <div class="panel" id="panel-replay" name="回放界面" v-show=" panel['replay'] ">
+            <h2 class="pink"> 对局回放 </h2>
+
+            <img :src="elysiaImgSrc['8']['src']" alt="爱莉打扮中♪" style="width: 80%;">
+
+            <div>
+                <span class="pink">
+                    {{history['replay']['gameName']}}
+                    {{history['replay']['attempt']}}次/{{history['replay']['max']}}次
+                    {{history['replay']['score']}}分
+                    {{history['replay']['win']?'胜':'负'}}
+                </span>
+            </div>
+
+            <div>
+                <template v-for="(h,index) in history['replay']['hint']" :key="index">
+                    <span class="pink"> {{h}} </span><br>
+                </template>
+            </div>
+
+            <div v-for="(list,i) in history['replay']['list']" class="text history-row" :key="i">
+                第{{i+1}}次：
+                <template v-for="(li,index) in list['digits']" :key="index">
+                    <span :class="list['colors'][index]"> {{ li }} </span>
+                </template>
+            </div>
+
+            <div>
+                <button @click=" showPanel('mode') ">返回模式</button>
+                <button @click=" showPanel('score')">查看战绩</button>
+            </div>
+
+        </div>
+
+        <div class="panel" id="panel-settings" name="设置界面" v-show=" panel['settings'] ">
+            <h2> 设置 </h2>
+
+            <img :src="elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 40%;">
+
+            <div class="item">
+                <label>历史战绩显示：</label>
+                <input type="text" v-model="settingMap['historyMax']" placeholder="最多99局" @input="onInputSettings">
+            </div>
+
+            <div class="item">
+                <label>颜色判断机制：</label>
+                <select v-model="settingMap['dynamic']">
+                    <option value="0">非动态</option>
+                    <option value="1">动态</option>
+                </select>
+            </div>
+
+            <div class="item">
+                <div>
+                    <label>背景音乐：</label>
+                </div>
+
+                <div>
+                    <label for="audio">{{settingMap['setAudio']?'自定义':'默认'}}</label>
+                    <input type="checkbox" id="audio" v-model="settingMap['setAudio']">
+                </div>
+
+                <div v-if="!settingMap['setAudio']">
+                    <select v-model="Music['index']" style="width: 150px;">
+                        <template v-for="(item,key) in audioSrc" :key="key">
+                            <option :value="key"> {{ item['name'] }} </option>
+                        </template>
+                    </select>
+                </div>
+                <div v-else>
+                    <label for="bgm">上传</label>
+                    <input type="file" id="bgm" accept="audio/*" @change="setBgAudio">
+                </div>
+
+                <div>
+                    <audio ref="bgm" loop preload="auto"></audio>
+                    <button @click="playAudio"> {{ Music['isPlaying'] ? '⏸️' : '🎵' }} </button>
+                </div>
+
+            </div>
+
+            <div class="item">
+                <div>
+                    <label>背景图片：</label>
+                </div>
+
+                <div>
+                    <label for="image"> {{settingMap['setImage']?'自定义':'默认'}} </label>
+                    <input type="checkbox" id="image" v-model="settingMap['setImage']">
+                </div>
+
+                <div v-if="!settingMap['setImage']">
+                    <select v-model="Image['index']" style="width: 70px;">
+                        <template v-for="(item,key) in imageSrc" :key="key">
+                            <option :value="key"> 第{{key}}张 </option>
+                        </template>
+                    </select>
+                    <img :src="imageSrc[Image['index']]['src']" :alt="`第${Image['index']}张`"
+                        style="width: 120px;height: 80px;">
+                    <button @click="playImage">确定</button>
+                </div>
+                <div v-else>
+                    <label for="img">上传</label>
+                    <input type="file" id="img" ref="fileDom" accept="image/*" @change="setBgImage">
+                </div>
+
+            </div>
+
+            <div>
+                <button @click="showPanel('loading')">返回开始</button>
+                <button @click="showPanel('mode')">返回模式</button>
+            </div>
+
+        </div>
+
+
+    </div>
+
+    <!-- 开发时 -->
+
+    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+
+    <!-- 部署时 -->
+
+    <script  src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+    <script type="module" src="./main.js"></script>
+</body>
+
+</html>
