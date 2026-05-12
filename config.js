@@ -108,18 +108,18 @@ export const CLASSIC_IMG = {
 }
 
 export const GAME_DEFAULTS = {
-    mode: {
+    'mode': {
         Mode: 'classic',
         Level: '',
         Name: '简单'
     },
-    data: {
+    'data': {
         Len: 4,
         Repeat: false,
         Purple: false,
         Max: 10,
     },
-    state: {
+    'state': {
         Input: '',
         Target: '',
         Attempts: 0,
@@ -128,7 +128,7 @@ export const GAME_DEFAULTS = {
         Win: false,
         Lost: false,
     },
-    hint: {
+    'hint': {
         pos: '0',
         used: 0,
         max: 2,
