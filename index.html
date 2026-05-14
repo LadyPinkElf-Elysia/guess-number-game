@@ -13,7 +13,7 @@
         <div class="panel" id="panel-loading" name="加载界面" v-show="panel['loading']">
             <h2><span class="pink">爱莉希雅的魔法♪</span></h2>
 
-            <img :src="elysiaImgSrc['1']['src']" alt="爱莉打扮中♪" style="width: 80%;">
+            <img :src="constants.elysiaImgSrc['1']['src']" alt="爱莉打扮中♪" style="width: 80%;">
 
             <div>
                 <button @click="showPanel('mode')"><span> 与爱莉共舞♪ </span></button>
@@ -25,11 +25,11 @@
 
             <div>
                 <button @click=" chooseMode('classic') ">
-                    <img :src="elysiaImgSrc['2']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                    <img :src="constants.elysiaImgSrc['2']['src']" alt="爱莉打扮中♪" style="width: 20%;">
                     <span>往世乐土</span>
                 </button>
                 <button @click=" chooseMode('custom') ">
-                    <img :src="elysiaImgSrc['3']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                    <img :src="constants.elysiaImgSrc['3']['src']" alt="爱莉打扮中♪" style="width: 20%;">
                     <span>永世乐土</span>
                 </button>
             </div>
@@ -38,9 +38,9 @@
                 <!-- v-for="(值,键) in 对象" 如果又有v-if又有v-for就用template来当工具人 -->
                 <!-- 把v-for挂在template上，v-if挂在子元素上 -->
                 <!-- 如果对象是一个字典，那么值就是字典的一个分量 -->
-                <template v-for=" (item,key) in classicMap " :key="key">
+                <template v-for=" (item,key) in constants.classicMap " :key="key">
                     <button @click="setGameClassic(key)">
-                        <img :src="classicImgSrc[key]['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                        <img :src="constants.classicImgSrc[key]['src']" alt="爱莉打扮中♪" style="width: 20%;">
                         <span class="pink">{{ item['name'] }} ( {{ item['len']}} 位数字 {{ item['max'] }} 次机会 )</span>
                     </button><br>
                 </template>
@@ -50,7 +50,7 @@
                 <div class="item">
                     <label>数字位数：</label>
                     <select v-model="customMap['len']" @change="setGameCustom">
-                        <template v-for="(base,key) in baseMap" :key="key">
+                        <template v-for="(base,key) in constants.baseMap" :key="key">
                             <option :value="key"> {{key}}位数字 基础分+{{ base[false] }}分 </option>
                         </template>
                     </select>
@@ -67,7 +67,7 @@
                 <div class="item">
                     <label>提示机制：</label>
                     <select v-model="customMap['purple']" @change="setGameCustom">
-                        <option value="0"> 经典 比例分+{{purpleRate*100}}% （+{{ scores['purple'] }}分） </option>
+                        <option value="0"> 经典 比例分+{{ constants.purpleRate*100 }}% （+{{ scores['purple'] }}分） </option>
                         <option value="1"> 紫色 比例分+0% （+0分） </option>
                     </select>
                 </div>
@@ -103,7 +103,7 @@
             <h2><span class="pink"> 妖精的小游戏♪ </span></h2>
 
             <div class="rule">
-                <img :src="elysiaImgSrc['4']['src']" alt="爱莉打扮中♪" style="width: 20%;"><br>
+                <img :src="constants.elysiaImgSrc['4']['src']" alt="爱莉打扮中♪" style="width: 20%;"><br>
                 <span> 当前难度：{{ gameName }} (难度分：{{ scores['final'] }}) </span><br>
                 <span> 游戏规则：</span><br>
                 <span> 1.随机生成 {{ game['data']['Len'] }} 位数字（{{ game['data']['Repeat'] ? '可重复' : '不可重复'}}）</span><br>
@@ -116,7 +116,7 @@
                     <span> 4.<span class="yellow">黄色数字</span> ：该数字答案中存在，但在当前位置左侧 </span><br>
                     <span> 5.<span class="purple">紫色数字</span> ：该数字答案中存在，但在当前位置右侧 </span><br>
                 </span>
-                <span v-if="settingMap['dynamic']==='1' ">
+                <span v-if="settingMap['setDynamic']===true ">
                     <strong>颜色处理机制：</strong><br>
                     绿色数字会影响到黄色和红色的统计<br>
                     例如猜测1110，答案为1001：<br>
@@ -142,13 +142,13 @@
             </div>
 
             <div class="text">
-                <img :src="elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                <img :src="constants.elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 20%;">
                 <span> 妖精爱莉的贴心小提示：{{ game['state']['Msg'] }} </span>
                 <div v-if="game['state']['Win']">
-                    <img :src="elysiaImgSrc['6']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                    <img :src="constants.elysiaImgSrc['6']['src']" alt="爱莉打扮中♪" style="width: 20%;">
                 </div>
                 <div v-if="game['state']['Lost']">
-                    <img :src="elysiaImgSrc['7']['src']" alt="爱莉打扮中♪" style="width: 20%;">
+                    <img :src="constants.elysiaImgSrc['7']['src']" alt="爱莉打扮中♪" style="width: 20%;">
                 </div>
             </div>
 
@@ -197,7 +197,7 @@
         <div class="panel" id="panel-score" name="战绩界面" v-show=" panel['score'] ">
             <h2 class="pink"> 查看最近 {{ settingMap['historyMax'] }} 局战绩 </h2>
 
-            <img :src="elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 80%;">
+            <img :src="constants.elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 80%;">
 
             <div class="text">
                 <div v-for="(h,i) in history['recent']" :key="i">
@@ -225,7 +225,7 @@
         <div class="panel" id="panel-replay" name="回放界面" v-show=" panel['replay'] ">
             <h2 class="pink"> 对局回放 </h2>
 
-            <img :src="elysiaImgSrc['8']['src']" alt="爱莉打扮中♪" style="width: 80%;">
+            <img :src="constants.elysiaImgSrc['8']['src']" alt="爱莉打扮中♪" style="width: 80%;">
 
             <div>
                 <span class="pink">
@@ -259,7 +259,7 @@
         <div class="panel" id="panel-settings" name="设置界面" v-show=" panel['settings'] ">
             <h2> 设置 </h2>
 
-            <img :src="elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 40%;">
+            <img :src="constants.elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 40%;">
 
             <div class="item">
                 <label>历史战绩显示：</label>
@@ -268,10 +268,8 @@
 
             <div class="item">
                 <label>颜色判断机制：</label>
-                <select v-model="settingMap['dynamic']">
-                    <option value="0">非动态</option>
-                    <option value="1">动态</option>
-                </select>
+                <label for="dynamic">{{settingMap['setDynamic']?'动态':'非动态'}}</label>
+                <input type="checkbox" name="dynamic" id="dynamic" v-model="settingMap['setDynamic']">
             </div>
 
             <div class="item">
@@ -286,7 +284,7 @@
 
                 <div v-if="!settingMap['setAudio']">
                     <select v-model="Music['index']" style="width: 150px;">
-                        <template v-for="(item,key) in audioSrc" :key="key">
+                        <template v-for="(item,key) in constants.audioSrc" :key="key">
                             <option :value="key"> {{ item['name'] }} </option>
                         </template>
                     </select>
@@ -315,11 +313,11 @@
 
                 <div v-if="!settingMap['setImage']">
                     <select v-model="Image['index']" style="width: 70px;">
-                        <template v-for="(item,key) in imageSrc" :key="key">
+                        <template v-for="(item,key) in constants.imageSrc" :key="key">
                             <option :value="key"> 第{{key}}张 </option>
                         </template>
                     </select>
-                    <img :src="imageSrc[Image['index']]['src']" :alt="`第${Image['index']}张`"
+                    <img :src="constants.imageSrc[Image['index']]['src']" :alt="`第${Image['index']}张`"
                         style="width: 120px;height: 80px;">
                     <button @click="playImage">确定</button>
                 </div>

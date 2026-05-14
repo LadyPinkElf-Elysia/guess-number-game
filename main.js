@@ -1,4 +1,4 @@
-import { CLASSIC_MAP, BASE_MAP, RATE_MAP, PURPLE_RATE, AUDIO_SRC, IMAGE_SRC, ELYSIA_IMAGE_SRC, CLASSIC_IMG, GAME_DEFAULTS } from './config.js'
+import { CLASSIC_MAP, BASE_MAP, RATE_MAP, PURPLE_RATE, HISTORY_MAX, AUDIO_SRC, IMAGE_SRC, ELYSIA_IMAGE_SRC, CLASSIC_IMG, GAME_DEFAULTS } from './config.js'
 import { loadRecord, saveRecord } from './utils/storage.js'
 import { strNumToBool, getTarget, getResult } from './utils/gameLogic.js'
 
@@ -7,20 +7,21 @@ const { createApp: myApp } = Vue
 myApp({
     data() {
         return {
-            classicMap: CLASSIC_MAP,
-            baseMap: BASE_MAP,
-            rateMap: RATE_MAP,
-            audioSrc: AUDIO_SRC,
-            imageSrc: IMAGE_SRC,
-            elysiaImgSrc: ELYSIA_IMAGE_SRC,
-            classicImgSrc: CLASSIC_IMG,
-            purpleRate: PURPLE_RATE,                //引用只读常量
+            constants: {                        //存储游戏的常量数据，包括经典模式配置、基础得分表、得分率、历史记录最大值以及资源路径等，确保游戏逻辑和资源管理的统一性和可维护性
+                classicMap: CLASSIC_MAP,
+                baseMap: BASE_MAP,
+                audioSrc: AUDIO_SRC,
+                imageSrc: IMAGE_SRC,
+                elysiaImgSrc: ELYSIA_IMAGE_SRC,
+                classicImgSrc: CLASSIC_IMG,
+                purpleRate: PURPLE_RATE,
+            },
 
-            customMap: { 
-                'len': '4', 
-                'repeat': '0', 
-                'purple': '0', 
-                'max': '10', 
+            customMap: {
+                'len': '4',
+                'repeat': '0',
+                'purple': '0',
+                'max': '10',
             },                                      //自定义模式的临时存储对象
 
             game: {
@@ -51,13 +52,13 @@ myApp({
             },
 
             history: {                              //游戏历史记录，包含最近的战绩和当前回放的对局数据
-                'recent': [],   
-                'replay': {}     
+                'recent': [],
+                'replay': {}
             },
 
             settingMap: {                           //设置界面的临时存储对象，包含历史记录最大值和是否启用动态提示  
-                'dynamic': '0',
-                'historyMax': 10,
+                'historyMax': HISTORY_MAX,
+                'setDynamic': false,
                 'setAudio': false,
                 'setImage': false,
             },
@@ -80,7 +81,7 @@ myApp({
 
     computed: {
         //计算当前游戏的得分情况，基于游戏数据和状态进行综合评估，提供给玩家明确的得分信息和激励机制
-        scores() {                  
+        scores() {
             const { Len: len, Repeat: rep, Purple: pur, Max: max } = this.game.data;
             const base = BASE_MAP[len][rep];
 
@@ -102,10 +103,12 @@ myApp({
             };
         },
         //计算当前游戏的得分表，展示不同尝试次数对应的得分情况，供玩家参考
-        scoreTable() {              
-            const base = BASE_MAP[this.game.data.Len][this.game.data.Repeat];
-            const table = {};
+        scoreTable() {
+            const data = this.game['data'];
 
+            const base = BASE_MAP[data.Len][data.Repeat];
+            const table = {};
+            //根据预设的得分率计算不同尝试次数对应的得分情况，并存储在表格对象中，供玩家参考和激励
             for (const [key, rate] of Object.entries(RATE_MAP)) {
                 table[key] = {
                     rate,
@@ -116,7 +119,7 @@ myApp({
             return table;
         },
         //计算当前游戏的名称，基于游戏模式和数据进行动态生成，提供给玩家明确的游戏类型信息
-        gameName() {                
+        gameName() {
             const mode = this.game['mode'];
             const data = this.game['data'];
 
@@ -129,7 +132,7 @@ myApp({
             return CLASSIC_MAP.easy.name;
         },
         //计算提交按钮是否应该被禁用，基于当前游戏状态和输入数据的完整性进行判断，确保玩家只能在有效输入时提交猜测
-        isConfirmDisabled() {           
+        isConfirmDisabled() {
             const state = this.game['state'];
             const data = this.game['data'];
 
@@ -139,8 +142,9 @@ myApp({
             return state.Input.length !== data.Len;
         },
         //计算玩家剩余的提示次数，基于游戏提示的使用情况和最大限制进行计算，提醒玩家合理使用提示资源
-        remainingHints() {          
+        remainingHints() {
             const hint = this.game['hint'];
+
             return hint.max - hint.used;
         },
 
@@ -149,7 +153,13 @@ myApp({
     methods: {
         //预加载图片资源，提升用户体验，确保在游戏过程中图片能够快速显示，避免加载延迟带来的不适感
         preloadImages() {
-            Object.values(IMAGE_SRC).forEach(item => {
+            this.preloadImg(IMAGE_SRC);
+            this.preloadImg(ELYSIA_IMAGE_SRC);
+            this.preloadImg(CLASSIC_IMG);
+        },
+        //预加载图片资源的具体实现，创建Image对象并设置其src属性，触发浏览器的预加载机制，确保图片资源能够被提前加载到浏览器缓存中
+        preloadImg(SRC) {
+            Object.values(SRC).forEach(item => {
                 const img = new Image();
                 img.src = item.src;
             });
@@ -162,13 +172,12 @@ myApp({
             }
             Object.assign(target, cloned);
         },
-        
+
         //清空游戏状态，重置游戏模式、数据、状态和提示信息为默认值，为新游戏做好准备，确保玩家每次开始游戏时都能有一个干净的状态
         clearGame() {
-            this.resetData(this.game['mode'], GAME_DEFAULTS.mode);
-            this.resetData(this.game['data'], GAME_DEFAULTS.data);
-            this.resetData(this.game['state'], GAME_DEFAULTS.state);
-            this.resetData(this.game['hint'], GAME_DEFAULTS.hint);
+            for (const key in this.game) {
+                this.resetData(this.game[key], GAME_DEFAULTS[key]);
+            }
         },
         //清空战绩，提供给玩家明确的操作确认，确保数据安全
         clearRecord() {
@@ -180,13 +189,17 @@ myApp({
         },
         //开始游戏，初始化游戏状态和提示信息，为玩家提供新的游戏体验
         startGame() {
-            this.resetData(this.game['state'], GAME_DEFAULTS.state);
-            this.resetData(this.game['hint'], GAME_DEFAULTS.hint);
-            this.game['state'].Target = getTarget(
-                this.game['data'].Len,
-                this.game['data'].Repeat
+            const state = this.game['state'];
+            const data = this.game['data'];
+            const hint = this.game['hint'];
+
+            this.resetData(state, GAME_DEFAULTS.state);
+            this.resetData(hint, GAME_DEFAULTS.hint);
+            state.Target = getTarget(
+                data.Len,
+                data.Repeat
             );
-            this.game['state'].Msg = '新的一天，从一场美妙的邂逅开始♪ ';
+            state.Msg = '新的一天，从一场美妙的邂逅开始♪ ';
 
             if (!this.cheatHandler) {
                 this.cheatKey();
@@ -210,8 +223,10 @@ myApp({
         },
         //选择游戏模式，设置当前游戏的模式和相关数据，为玩家提供不同的游戏体验和挑战
         chooseMode(modeName) {
+            const mode = this.game['mode'];
+
             this.clearGame();
-            this.game['mode'].Mode = modeName;
+            mode.Mode = modeName;
             if (modeName === 'classic') {
                 this.setGameClassic('easy');//默认值
             }
@@ -221,8 +236,10 @@ myApp({
         },
         //设置经典模式，基于选择的难度级别配置游戏数据，为玩家提供预设的经典游戏体验
         setGameClassic(level) {
+            const mode = this.game['mode'];
+
             const classic = CLASSIC_MAP[level];
-            this.game['mode'].Level = level;
+            mode.Level = level;
             this.setGameData(classic);
         },
         //设置自定义模式，基于玩家的输入配置游戏数据，为玩家提供个性化的游戏体验
@@ -232,14 +249,18 @@ myApp({
         },
         //设置游戏数据，根据传入的游戏模式配置相应的数据项
         setGameData(mode) {
-            this.game['data'].Len = Number(mode.len);
-            this.game['data'].Repeat = strNumToBool(mode.repeat);
-            this.game['data'].Purple = strNumToBool(mode.purple);
-            this.game['data'].Max = Number(mode.max);
+            const data = this.game['data'];
+            this.resetData(data, {
+                Len: Number(mode.len),
+                Repeat: strNumToBool(mode.repeat),
+                Purple: strNumToBool(mode.purple),
+                Max: Number(mode.max),
+            });
         },
         //输入处理，确保玩家输入的有效性和格式正确，提供即时的输入反馈，提升用户体验
         onInputGame() {
-            this.game['state'].Input = this.game['state'].Input.replace(/[^\d]/g, '');
+            const state = this.game['state'];
+            state.Input = state.Input.replace(/[^\d]/g, '');
         },
         //设置历史记录最大值输入处理，确保玩家输入的有效性和合理范围，提供即时的输入反馈，提升用户体验
         onInputSettings() {
@@ -253,49 +274,56 @@ myApp({
         },
         //猜测处理，基于玩家的输入进行游戏逻辑判断，更新游戏状态和提示信息，提供即时的反馈，提升游戏体验
         guess() {
-            const input = this.game['state'].Input;
-            const target = this.game['state'].Target;
-            const isPurple = this.game['data'].Purple;
-            const isDynamic = strNumToBool(this.settingMap.dynamic);
+            const state = this.game['state'];
+            const data = this.game['data'];
+            const settingMap = this.settingMap;
+
+            const { Input: input, Target: target } = state;
+            const isPurple = data.Purple;
+            const isDynamic = strNumToBool(settingMap.setDynamic);
             const result = getResult(input, target, isPurple, isDynamic);
-            this.game['state'].List.push({
+            state.List.push({
                 digits: input.split(''),
                 colors: result
             });
-            this.game['state'].Attempts++;
+            state.Attempts++;
 
             if (input === target) {
-                this.game['state'].Win = true;
-                this.game['state'].Msg = `我就知道，你最棒了，答案是${this.game['state'].Target}♪  `;
+                state.Win = true;
+                state.Msg = `我就知道，你最棒了，答案是${state.Target}♪  `;
                 this.addRecord();
                 this.removeCheatKey();
-            } else if (this.game['state'].Attempts >= this.game['data'].Max) {
-                this.game['state'].Lost = true;
-                this.game['state'].Msg = `输了也不要紧，答案是${this.game['state'].Target}♪  `;
+            } else if (state.Attempts >= data.Max) {
+                state.Lost = true;
+                state.Msg = `输了也不要紧，答案是${state.Target}♪  `;
                 this.addRecord();
                 this.removeCheatKey();
             }
-            this.game['state'].Input = '';
+            state.Input = '';
         },
         //显示位置提示，基于玩家的请求提供特定位置的数字提示，更新游戏状态和提示信息，确保玩家能够合理使用提示资源，提升游戏体验
         showPosHint() {
-            if (this.game['state'].Win || this.game['state'].Lost) {
-                this.game['state'].Msg = '游戏已结束了哦♪  ';
+            const state = this.game['state'];
+            const data = this.game['data'];
+            const hint = this.game['hint'];
+
+            if (state.Win || state.Lost) {
+                state.Msg = '游戏已结束了哦♪  ';
                 return;
             }
-            if (this.game['state'].Target === '') {
-                this.game['state'].Msg = '要先开始游戏哦♪  ';
+            if (state.Target === '') {
+                state.Msg = '要先开始游戏哦♪  ';
                 return;
             }
-            const pos = Number(this.game['hint'].pos);
-            const num = this.game['state'].Target[pos];
+            const pos = Number(hint.pos);
+            const num = state.Target[pos];
             const txt = `第 ${pos + 1} 位数字是：${num}哦♪ `;
-            if (this.game['hint'].result.includes(txt)) {
-                this.game['state'].Msg = '这个位置已经提示过啦，不可以让妖精爱莉重复提示哦♪ ';
+            if (hint.result.includes(txt)) {
+                state.Msg = '这个位置已经提示过啦，不可以让妖精爱莉重复提示哦♪ ';
                 return;
             }
-            this.game['hint'].result.push(txt);
-            this.game['hint'].used++;
+            hint.result.push(txt);
+            hint.used++;
         },
         //作弊键，用于开发调试，允许通过特定按键快速查看答案，确保开发过程的便捷性和效率
         cheatKey() {
@@ -319,19 +347,25 @@ myApp({
         },
         //添加游戏记录，基于当前游戏的结果和相关数据生成新的记录项，更新历史记录列表，并根据设置的最大值进行管理，确保玩家的战绩能够被合理保存和展示
         addRecord() {
-            this.history.recent.unshift({
+            const state = this.game['state'];
+            const data = this.game['data'];
+            const hint = this.game['hint'];
+            const recent = this.history.recent;
+            const settings = this.settingMap;
+
+            recent.unshift({
                 gameName: this.gameName,
-                attempt: this.game['state'].Attempts,
-                max: this.game['data'].Max,
-                score: this.game['state'].Win ? this.scores.final : 0,
-                win: this.game['state'].Win,
-                list: this.game['state'].List,
+                attempt: state.Attempts,
+                max: data.Max,
+                score: state.Win ? this.scores.final : 0,
+                win: state.Win,
+                list: state.List,
                 locked: false,
-                hint: this.game['hint'].result,
+                hint: hint.result,
             });
             const maxCount = Number(this.settingMap.historyMax);
-            const locked = this.history.recent.filter(i => i.locked);
-            const unlocked = this.history.recent.filter(i => !i.locked);
+            const locked = recent.filter(i => i.locked);
+            const unlocked = recent.filter(i => !i.locked);
 
             if (unlocked.length > maxCount) {
                 unlocked.splice(maxCount);

@@ -17,6 +17,8 @@ export const RATE_MAP = {
 
 export const PURPLE_RATE = 0.20
 
+export const HISTORY_MAX = 10
+
 //https://cdn.jsdelivr.net/gh/ladypinkelf-elysia/guess-number-game
 
 // export const AUDIO_SRC = {
