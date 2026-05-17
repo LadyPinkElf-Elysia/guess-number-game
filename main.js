@@ -280,7 +280,7 @@ myApp({
 
             const { Input: input, Target: target } = state;
             const isPurple = data.Purple;
-            const isDynamic = strNumToBool(settingMap.setDynamic);
+            const isDynamic = settingMap.setDynamic;
             const result = getResult(input, target, isPurple, isDynamic);
             state.List.push({
                 digits: input.split(''),
