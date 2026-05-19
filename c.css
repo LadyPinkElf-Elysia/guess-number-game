@@ -30,6 +30,7 @@ body {
     padding: 64px 36px;
     box-shadow: 0 4px 12px #dbeafe;
     margin-bottom: 5px;
+    background-image: url('./img/粉色乐土.png');
     background-size: cover;
     background-position: center;
     background-blend-mode: overlay;

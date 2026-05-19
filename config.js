@@ -90,6 +90,7 @@ export const IMAGE_SRC = {
     '7': { 'src': "./img/洛天依.png" },
     '8': { 'src': "./img/游乐园小诗.png" },
     '9': { 'src': "./img/落水爱莉.png" },
+    '10':{'src':"./img/粉色乐土.png"},
 }
 
 export const ELYSIA_IMAGE_SRC = {
