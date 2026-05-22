@@ -53,7 +53,7 @@ myApp({
 
             history: {                              //游戏历史记录，包含最近的战绩和当前回放的对局数据
                 'recent': [],
-                'replay': {}
+                'replay': {},
             },
 
             settingMap: {                           //设置界面的临时存储对象，包含历史记录最大值和是否启用动态提示  
@@ -132,7 +132,7 @@ myApp({
             if (mode.Mode === 'custom') {
                 return `自定义${data.Len}位`;
             }
-            return CLASSIC_MAP.easy.name;
+            return `经典-${CLASSIC_MAP.easy.name}`;
         },
         //计算提交按钮是否应该被禁用，基于当前游戏状态和输入数据的完整性进行判断，确保玩家只能在有效输入时提交猜测
         isConfirmDisabled() {
@@ -472,7 +472,7 @@ myApp({
         },
 
 
-        
+
         //设置背景音乐，允许玩家通过文件输入选择自定义的音频资源进行游戏背景音乐，提供个性化的音频体验，提升游戏的沉浸感和乐趣
         setBgAudio(e) {
             const file = e.target.files?.[0];
@@ -481,20 +481,31 @@ myApp({
                 alert("请选择有效音频❗");
                 return;
             }
-
+            //URL.createObjectURL()方法创建一个指向该文件的临时URL
+            // 允许在浏览器中直接访问和使用该文件，确保玩家选择的音频资源能够被正确加载和播放
+            //刷新后会失效，确保安全性和隐私保护
             this.Music.customSrc = URL.createObjectURL(file);
             this.Music.isPlaying = false;
         },
         //设置背景图片，允许玩家通过文件输入选择自定义的图像资源进行游戏背景图片，提供个性化的视觉体验，提升游戏的沉浸感和乐趣
         setBgImage(e) {
-            const file = e.target.files?.[0];//只读取一个文件
-
+            const file = e.target.files?.[0];
+            //只读取一个文件,?.是可选链操作符，确保在没有文件被选择时不会抛出错误，而是返回undefined
+            //startsWith()方法用于判断文件类型是否以'image/'开头，确保玩家选择的文件是有效的图像资源，提升用户体验和游戏的沉浸感
             if (!file || !file.type.startsWith('image/')) {
                 alert("请选择有效图片❗");
                 return;
             }
 
             const reader = new FileReader();//实例化一个读取器
+            //FileReader对象的onload事件在读取操作完成时触发，确保在文件被成功读取后能够获取到文件内容并进行相应的处理
+            //reader.result属性包含了读取操作的结果，这里是图像文件的Data URL，
+            // 可以直接用于设置背景图片，确保玩家选择的图像资源能够被正确加载和显示
+            //readAsDataURL()方法开始读取指定的文件，并在读取完成后触发onload事件，确保文件内容能够被正确读取和处理
+
+            //实例化FileReader对象，设置onload事件处理函数，在文件被成功读取后获取到文件内容并进行相应的处理
+            // 最后调用readAsDataURL()方法开始读取指定的图像文件，确保玩家选择的图像资源能够被正确加载和显示
+
             reader.onload = () => {
                 const imgUrl = reader.result;
                 const panels = document.querySelectorAll('.panel');
