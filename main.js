@@ -58,6 +58,7 @@ myApp({
 
             settingMap: {                           //设置界面的临时存储对象，包含历史记录最大值和是否启用动态提示  
                 'historyMax': HISTORY_MAX,
+
                 'setDynamic': false,
                 'setAudio': false,
                 'setImage': false,
@@ -109,6 +110,8 @@ myApp({
             const base = BASE_MAP[data.Len][data.Repeat];
             const table = {};
             //根据预设的得分率计算不同尝试次数对应的得分情况，并存储在表格对象中，供玩家参考和激励
+            //Object.entries()方法将RATE_MAP对象转换为一个包含键值对的数组
+            // 然后通过for...of循环遍历每个键值对，计算对应的得分并存储在table对象中，最终返回完整的得分表
             for (const [key, rate] of Object.entries(RATE_MAP)) {
                 table[key] = {
                     rate,
@@ -124,7 +127,7 @@ myApp({
             const data = this.game['data'];
 
             if (mode.Mode === 'classic' && mode.Level) {
-                return CLASSIC_MAP[mode.Level].name;
+                return `经典-${CLASSIC_MAP[mode.Level].name}`;
             }
             if (mode.Mode === 'custom') {
                 return `自定义${data.Len}位`;
@@ -159,34 +162,56 @@ myApp({
         },
         //预加载图片资源的具体实现，创建Image对象并设置其src属性，触发浏览器的预加载机制，确保图片资源能够被提前加载到浏览器缓存中
         preloadImg(SRC) {
+            //Object.values()方法返回一个包含对象自身所有可枚举属性值的数组
+            // 通过forEach循环遍历每个属性值，创建一个新的Image对象，并将其src属性设置为对应的图片资源路径
+            // 触发浏览器的预加载机制，确保图片资源能够被提前加载到浏览器缓存中，提高游戏过程中图片显示的速度和流畅度
             Object.values(SRC).forEach(item => {
                 const img = new Image();
                 img.src = item.src;
             });
         },
+
+
+
         //重置数据对象，清空目标对象的现有属性并赋予默认值，确保游戏状态能够正确初始化，避免数据残留导致的错误
         resetData(target, defaults) {
+            //使用structuredClone方法创建一个默认值的深拷贝
+            // 确保在重置数据时不会受到原始默认值对象的影响，避免潜在的引用问题
             const cloned = structuredClone(defaults);
             for (const key in target) {
+                //delete操作符用于删除对象的属性，这里用于清空目标对象的现有属性，为新的数据赋值做好准备
+                // 不会留下任何旧数据，确保游戏状态能够正确初始化，避免数据残留导致的错误
                 delete target[key];
             }
+            //Object.assign()方法将克隆的默认值对象的属性复制到目标对象中，完成数据的重置和初始化
             Object.assign(target, cloned);
         },
 
         //清空游戏状态，重置游戏模式、数据、状态和提示信息为默认值，为新游戏做好准备，确保玩家每次开始游戏时都能有一个干净的状态
         clearGame() {
+            //通过循环遍历游戏对象的每个键，调用resetData方法将对应的数据项重置为默认值
+            // 确保游戏状态能够正确初始化，避免数据残留导致的错误
             for (const key in this.game) {
                 this.resetData(this.game[key], GAME_DEFAULTS[key]);
             }
         },
+
         //清空战绩，提供给玩家明确的操作确认，确保数据安全
         clearRecord() {
+            //confirm()方法显示一个带有指定消息和确定/取消按钮的对话框，等待用户的响应
             if (!confirm('确定清空战绩？该操作不可逆 ')) {
                 return;
             }
+            //filter()方法创建一个新数组，包含所有通过测试的元素，这里用于保留被锁定的记录项，删除未锁定的记录项
+            //修改历史记录列表，确保玩家能够管理自己的战绩数据，提升用户体验
+            //不是变更原数组，而是创建一个新数组并赋值给history.recent，确保Vue能够正确检测到数据的变化并更新界面
+
             this.history.recent = this.history.recent.filter(i => i.locked);
             saveRecord(this.history.recent);
         },
+
+
+
         //开始游戏，初始化游戏状态和提示信息，为玩家提供新的游戏体验
         startGame() {
             const state = this.game['state'];
@@ -195,6 +220,7 @@ myApp({
 
             this.resetData(state, GAME_DEFAULTS.state);
             this.resetData(hint, GAME_DEFAULTS.hint);
+
             state.Target = getTarget(
                 data.Len,
                 data.Repeat
@@ -221,6 +247,9 @@ myApp({
                 this.removeCheatKey();
             }
         },
+
+
+
         //选择游戏模式，设置当前游戏的模式和相关数据，为玩家提供不同的游戏体验和挑战
         chooseMode(modeName) {
             const mode = this.game['mode'];
@@ -257,6 +286,9 @@ myApp({
                 Max: Number(mode.max),
             });
         },
+
+
+
         //输入处理，确保玩家输入的有效性和格式正确，提供即时的输入反馈，提升用户体验
         onInputGame() {
             const state = this.game['state'];
@@ -272,6 +304,9 @@ myApp({
                 this.settingMap.historyMax = '10';
             }
         },
+
+
+
         //猜测处理，基于玩家的输入进行游戏逻辑判断，更新游戏状态和提示信息，提供即时的反馈，提升游戏体验
         guess() {
             const state = this.game['state'];
@@ -301,6 +336,9 @@ myApp({
             }
             state.Input = '';
         },
+
+
+
         //显示位置提示，基于玩家的请求提供特定位置的数字提示，更新游戏状态和提示信息，确保玩家能够合理使用提示资源，提升游戏体验
         showPosHint() {
             const state = this.game['state'];
@@ -325,6 +363,9 @@ myApp({
             hint.result.push(txt);
             hint.used++;
         },
+
+
+
         //作弊键，用于开发调试，允许通过特定按键快速查看答案，确保开发过程的便捷性和效率
         cheatKey() {
             if (this.cheatHandler) {
@@ -345,6 +386,9 @@ myApp({
                 this.cheatHandler = null;
             }
         },
+
+
+
         //添加游戏记录，基于当前游戏的结果和相关数据生成新的记录项，更新历史记录列表，并根据设置的最大值进行管理，确保玩家的战绩能够被合理保存和展示
         addRecord() {
             const state = this.game['state'];
@@ -374,6 +418,9 @@ myApp({
             this.history.recent = [...locked, ...unlocked];
             saveRecord(this.history.recent);
         },
+
+
+
         //打开回放，基于玩家选择的历史记录项展示对应的游戏回放界面，确保玩家能够回顾和分享自己的游戏过程，提升游戏的互动性和社交性
         openReplay(record) {
             this.history.replay = record;
@@ -385,6 +432,9 @@ myApp({
             record.locked = !record.locked;
             saveRecord(this.history.recent);
         },
+
+
+
         //播放音乐，基于当前的音乐设置选择合适的音频资源进行播放，提供给玩家个性化的音频体验，提升游戏的沉浸感和乐趣
         playAudio() {
             const audio = this.$refs.bgm;
@@ -420,6 +470,9 @@ myApp({
                 panel.style.backgroundImage = `url(${src})`;
             });
         },
+
+
+        
         //设置背景音乐，允许玩家通过文件输入选择自定义的音频资源进行游戏背景音乐，提供个性化的音频体验，提升游戏的沉浸感和乐趣
         setBgAudio(e) {
             const file = e.target.files?.[0];
