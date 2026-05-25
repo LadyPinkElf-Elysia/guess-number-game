@@ -22,7 +22,7 @@ export const HISTORY_MAX = 10
 //https://cdn.jsdelivr.net/gh/ladypinkelf-elysia/guess-number-game
 
 // export const AUDIO_SRC = {
-//     '1': { 'name': '蝶恋花', 'src': "https://cdn.jsdelivr.net/gh/ladypinkelf-elysia/guess-number-game/music/蝶恋花.mp3" },
+//     '1': { 'name': '蝶恋花', 'src': "https://cdn.jsdelivr.net/gh/ladypinkelf-elysia/guess-number-game/music/蝶恋花.ogg" },
 //     '2': { 'name': '世末歌者', 'src': "https://cdn.jsdelivr.net/gh/ladypinkelf-elysia/guess-number-game/music/世末歌者.ogg" },
 //     '3': { 'name': '千本樱', 'src': "https://cdn.jsdelivr.net/gh/ladypinkelf-elysia/guess-number-game/music/千本樱.mp3" },
 //     '4': { 'name': '大荒寻梦录', 'src': "https://cdn.jsdelivr.net/gh/ladypinkelf-elysia/guess-number-game/music/大荒寻梦录.mp3" },
@@ -66,7 +66,7 @@ export const HISTORY_MAX = 10
 // }
 
 export const AUDIO_SRC = {
-    '1': { 'name': '蝶恋花', 'src': "./music/蝶恋花.mp3" },
+    '1': { 'name': '蝶恋花', 'src': "./music/蝶恋花.ogg" },
     '2': { 'name': '世末歌者', 'src': "./music/世末歌者.ogg" },
     '3': { 'name': '千本樱', 'src': "./music/千本樱.mp3" },
     '4': { 'name': '大荒寻梦录', 'src': "./music/大荒寻梦录.mp3" },
