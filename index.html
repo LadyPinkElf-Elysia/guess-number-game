@@ -20,7 +20,7 @@
             </div>
         </div>
 
-        <div class="panel" id="panel-mode" name="难度界面" v-show="panel['mode']">
+        <div class="panel" id="panel-mode" name="难度界面" v-show="panel['mode']" v-cloak>
             <h2><span class="pink"> 妖精的小游戏♪ </span></h2>
 
             <div>
@@ -99,7 +99,7 @@
 
         </div>
 
-        <div class="panel" id="panel-game" name="游戏界面" v-show="panel['game']">
+        <div class="panel" id="panel-game" name="游戏界面" v-show="panel['game']" v-cloak>
             <h2><span class="pink"> 妖精的小游戏♪ </span></h2>
 
             <div class="rule">
@@ -194,7 +194,7 @@
 
         </div>
 
-        <div class="panel" id="panel-score" name="战绩界面" v-show=" panel['score'] ">
+        <div class="panel" id="panel-score" name="战绩界面" v-show=" panel['score'] " v-cloak>
             <h2 class="pink"> 查看最近 {{ settingMap['historyMax'] }} 局战绩 </h2>
 
             <img :src="constants.elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 80%;">
@@ -222,7 +222,7 @@
 
         </div>
 
-        <div class="panel" id="panel-replay" name="回放界面" v-show=" panel['replay'] ">
+        <div class="panel" id="panel-replay" name="回放界面" v-show=" panel['replay'] " v-cloak>
             <h2 class="pink"> 对局回放 </h2>
 
             <img :src="constants.elysiaImgSrc['8']['src']" alt="爱莉打扮中♪" style="width: 80%;">
@@ -256,7 +256,7 @@
 
         </div>
 
-        <div class="panel" id="panel-settings" name="设置界面" v-show=" panel['settings'] ">
+        <div class="panel" id="panel-settings" name="设置界面" v-show=" panel['settings'] " v-cloak>
             <h2> 设置 </h2>
 
             <img :src="constants.elysiaImgSrc['5']['src']" alt="爱莉打扮中♪" style="width: 40%;">

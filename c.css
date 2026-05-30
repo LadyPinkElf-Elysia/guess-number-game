@@ -177,3 +177,7 @@ input[type="checkbox"] {
 .text:not(:empty) {
     display: block;
 }
+
+[v-cloak] {
+  display: none;
+}

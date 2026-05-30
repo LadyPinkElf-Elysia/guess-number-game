@@ -73,7 +73,7 @@ myApp({
         } catch (e) {
             console.error('战绩加载失败，已重置:', e);
             this.history.recent = [];
-            // 可选：清除损坏的数据
+            // 清除损坏的数据
             localStorage.removeItem('RecentGames');
         }
 
@@ -466,6 +466,8 @@ myApp({
             const i = this.Image.index;
             const src = IMAGE_SRC[i].src;
             const panels = document.querySelectorAll('.panel');
+            //通过查询选择器获取所有具有.panel类的元素，并将选定的图像资源设置为这些元素的背景图片，
+            // 确保玩家选择的图像资源能够被正确加载和显示，提升游戏的视觉体验
             panels.forEach(panel => {
                 panel.style.backgroundImage = `url(${src})`;
             });
