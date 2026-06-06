@@ -317,8 +317,10 @@
                             <option :value="key"> 第{{key}}张 </option>
                         </template>
                     </select>
+                    <br>
                     <img :src="constants.imageSrc[Image['index']]['src']" :alt="`第${Image['index']}张`"
-                        style="width: 120px;height: 80px;">
+                        style="width: 120px;height: 80px;"/>
+                    <br>
                     <button @click="playImage">确定</button>
                 </div>
                 <div v-else>
