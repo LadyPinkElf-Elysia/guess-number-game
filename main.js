@@ -418,14 +418,16 @@ myApp({
          * 从 CLASSIC_MAP 中读取对应难度的配置参数。
          *
          * @param {string} level - 难度键名，可选值：
-         *   - 'easy'  : 简单（通常 4 位，允许重复）
-         *   - 'medium': 中等（通常 4 位，不允许重复）
-         *   - 'hard'  : 困难（通常 5 位，不允许重复）
+         *   - 'easy'  : 简单（4 位，不允许重复，最大尝试 10 次）
+         *   - 'hard'  : 困难（6 位，不允许重复，最大尝试 10 次）
+         *   - 'hell'  : 地狱（8 位，不允许重复，最大尝试 10 次）
          * @returns {void}
          *
          * @example
          * // 设置为困难模式
          * this.setGameClassic('hard');
+         * // 设置为地狱模式
+         * this.setGameClassic('hell');
          */
         setGameClassic(level) {
             const mode = this.game['mode'];
@@ -770,14 +772,15 @@ myApp({
         /**
          * 处理用户上传自定义音频文件，生成临时 URL 并存储。
          * 仅接受音频格式文件（audio/*），否则弹出提示。
+         * 生成的临时 URL 存储在 `Music.customSrc` 中，刷新页面后失效。
          *
-         * @param {Event} e - 文件输入 change 事件
-         * @param {File} e.target.files[0] - 用户选择的音频文件
+         * @param {Event} e - 文件输入框的 change 事件，通过 `e.target.files[0]` 获取用户选择的音频文件
          * @returns {void}
          *
-         * @example
-         * // 在模板中绑定
-         * <input type="file" accept="audio/*" @change="setBgAudio" />
+         * @example <caption>在模板中绑定</caption>
+         * ```html
+         * <input type="file" accept="audio/*" v-on:change="setBgAudio" />
+         * ```
          */
         setBgAudio(e) {
             const file = e.target.files?.[0];
@@ -792,15 +795,15 @@ myApp({
         /**
          * 处理用户上传自定义图片文件，读取为 Data URL 并应用为背景。
          * 仅接受图片格式文件（image/*），否则弹出提示。
-         * 使用 FileReader 读取文件内容，读取完成后自动应用到所有面板。
+         * 使用 FileReader 读取文件内容，读取完成后自动应用到所有 `.panel` 元素。
          *
-         * @param {Event} e - 文件输入 change 事件
-         * @param {File} e.target.files[0] - 用户选择的图片文件
+         * @param {Event} e - 文件输入框的 change 事件，通过 `e.target.files[0]` 获取用户选择的图片文件
          * @returns {void}
          *
-         * @example
-         * // 在模板中绑定
-         * <input type="file" accept="image/*" @change="setBgImage" />
+         * @example <caption>在模板中绑定</caption>
+         * ```html
+         * <input type="file" accept="image/*" v-on:change="setBgImage" />
+         * ```
          */
         setBgImage(e) {
             const file = e.target.files?.[0];
