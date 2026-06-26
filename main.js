@@ -4,10 +4,80 @@ import { strNumToBool, getTarget, getResult } from './utils/gameLogic.js'
 
 const { createApp: myApp } = Vue
 
+/**
+ * 猜数字游戏主组件
+ *
+ * ─── 数据属性概览 ────────────────────────────────────────────
+ *  constants   : 游戏常量（经典映射、基础得分、资源路径等）
+ *  customMap   : 自定义模式临时配置
+ *  game        : 游戏核心数据（模式、数据、状态、提示）
+ *  Music       : 音乐播放状态
+ *  Image       : 背景图片状态
+ *  panel       : 面板显示控制
+ *  history     : 历史记录与回放
+ *  settingMap  : 设置界面临时配置
+ *
+ * ─── 计算属性概览 ────────────────────────────────────────────
+ *  scores            : 当前得分明细
+ *  scoreTable        : 不同尝试次数的得分表
+ *  gameName          : 动态游戏名称
+ *  isConfirmDisabled : 提交按钮禁用状态
+ *  remainingHints    : 剩余提示次数
+ *
+ * ─── 方法概览 ────────────────────────────────────────────────
+ *  ─── 资源预加载 ────────────────────────────────────────────
+ *  preloadImages()   → 预加载所有图片资源
+ *  preloadImg(SRC)   → 预加载指定图片资源
+ *
+ *  ─── 数据重置 ──────────────────────────────────────────────
+ *  resetData()       → 重置对象为默认值（深拷贝）
+ *  clearGame()       → 清空游戏所有状态
+ *  clearRecord()     → 清空历史记录（锁定项保留）
+ *
+ *  ─── 游戏控制 ──────────────────────────────────────────────
+ *  startGame()       → 开始新游戏
+ *  showPanel(name)   → 切换到指定面板
+ *
+ *  ─── 模式选择 ──────────────────────────────────────────────
+ *  chooseMode()      → 选择经典/自定义模式
+ *  setGameClassic()  → 设置经典模式难度
+ *  setGameCustom()   → 设置自定义模式参数
+ *  setGameData()     → 统一设置游戏数据
+ *
+ *  ─── 输入处理 ──────────────────────────────────────────────
+ *  onInputGame()     → 限制输入框只允许数字
+ *  onInputSettings() → 限制历史记录最大值为数字
+ *
+ *  ─── 核心游戏逻辑 ──────────────────────────────────────────
+ *  guess()           → 提交猜测，判断胜负
+ *
+ *  ─── 提示系统 ──────────────────────────────────────────────
+ *  showPosHint()     → 显示指定位置的数字提示
+ *
+ *  ─── 作弊键（开发辅助）────────────────────────────────────
+ *  cheatKey()        → 注册作弊键（按 s 显示答案）
+ *  removeCheatKey()  → 移除作弊键监听
+ *
+ *  ─── 记录管理 ──────────────────────────────────────────────
+ *  addRecord()       → 添加当前游戏记录到历史
+ *  openReplay()      → 打开回放面板
+ *  switchLock()      → 切换记录的锁定状态
+ *
+ *  ─── 音画设置 ──────────────────────────────────────────────
+ *  playAudio()       → 播放/暂停背景音乐
+ *  playImage()       → 更换背景图片
+ *  setBgAudio()      → 上传自定义音频文件
+ *  setBgImage()      → 上传自定义图片文件
+ *
+ * @example
+ * // 在 HTML 中挂载
+ * <div id="app"></div>
+ * // 组件将自动渲染
+ */
 myApp({
     data() {
         return {
-            constants: {                        //存储游戏的常量数据，包括经典模式配置、基础得分表、得分率、历史记录最大值以及资源路径等，确保游戏逻辑和资源管理的统一性和可维护性
+            constants: {
                 classicMap: CLASSIC_MAP,
                 baseMap: BASE_MAP,
                 audioSrc: AUDIO_SRC,
@@ -18,31 +88,32 @@ myApp({
             },
 
             customMap: {
-                'len': '4',
-                'repeat': '0',
-                'purple': '0',
-                'max': '10',
-            },                                      //自定义模式的临时存储对象
+                len: '4',
+                repeat: '0',
+                purple: '0',
+                max: '10',
+            },
 
             game: {
-                'mode': { ...GAME_DEFAULTS.mode },
-                'data': { ...GAME_DEFAULTS.data },
-                'state': { ...GAME_DEFAULTS.state },
-                'hint': { ...GAME_DEFAULTS.hint },
-            },                                      //游戏的核心数据对象，包含模式、数据、状态和提示信息
+                mode: { ...GAME_DEFAULTS.mode },
+                data: { ...GAME_DEFAULTS.data },
+                state: { ...GAME_DEFAULTS.state },
+                hint: { ...GAME_DEFAULTS.hint },
+            },
 
-            Music: {                                //音乐相关状态
+            Music: {
                 index: '1',
                 isPlaying: false,
                 src: AUDIO_SRC['1'].src,
                 customSrc: '',
             },
-            Image: {                                //图片相关状态
+
+            Image: {
                 index: '1',
                 src: IMAGE_SRC['1'].src,
             },
 
-            panel: {                                //界面显示状态
+            panel: {
                 mode: false,
                 game: false,
                 score: false,
@@ -51,19 +122,17 @@ myApp({
                 loading: true,
             },
 
-            history: {                              //游戏历史记录，包含最近的战绩和当前回放的对局数据
-                'recent': [],
-                'replay': {},
+            history: {
+                recent: [],
+                replay: {},
             },
 
-            settingMap: {                           //设置界面的临时存储对象，包含历史记录最大值和是否启用动态提示  
-                'historyMax': HISTORY_MAX,
-
-                'setDynamic': false,
-                'setAudio': false,
-                'setImage': false,
+            settingMap: {
+                historyMax: HISTORY_MAX,
+                setDynamic: false,
+                setAudio: false,
+                setImage: false,
             },
-
         }
     },
 
@@ -73,59 +142,59 @@ myApp({
         } catch (e) {
             console.error('战绩加载失败，已重置:', e);
             this.history.recent = [];
-            // 清除损坏的数据
             localStorage.removeItem('RecentGames');
         }
-
         this.preloadImages();
     },
 
     computed: {
-        //计算当前游戏的得分情况，基于游戏数据和状态进行综合评估，提供给玩家明确的得分信息和激励机制
+        /**
+         * 计算当前游戏的得分明细
+         * 基于位数、重复、紫色、尝试次数等参数，计算基础分、紫色加成、尝试加成及最终得分。
+         * @returns {Object} 得分对象
+         * @property {number} base      - 基础分
+         * @property {number} repeat    - 重复加成（若有）
+         * @property {number} purple    - 紫色加成（若未启用紫色则为0）
+         * @property {number} attempt   - 尝试次数加成
+         * @property {number} ratio     - 总加成（紫色+尝试）
+         * @property {number} final     - 最终得分
+         */
         scores() {
             const { Len: len, Repeat: rep, Purple: pur, Max: max } = this.game.data;
             const base = BASE_MAP[len][rep];
-
             const repeatBonus = BASE_MAP[len][true] - BASE_MAP[len][false];
             const purpleBonus = Math.round(base * PURPLE_RATE);
             const purScore = pur ? 0 : purpleBonus;
-
             const attemptScore = Math.round(base * RATE_MAP[max]);
             const ratio = purScore + attemptScore;
             const final = base + ratio;
-
-            return {
-                base,
-                repeat: repeatBonus,
-                purple: purpleBonus,
-                attempt: attemptScore,
-                ratio,
-                final,
-            };
+            return { base, repeat: repeatBonus, purple: purpleBonus, attempt: attemptScore, ratio, final };
         },
-        //计算当前游戏的得分表，展示不同尝试次数对应的得分情况，供玩家参考
+
+        /**
+         * 生成得分表，展示不同尝试次数对应的得分率与得分。
+         * @returns {Object.<string, {rate: number, score: number}>}
+         */
         scoreTable() {
             const data = this.game['data'];
-
             const base = BASE_MAP[data.Len][data.Repeat];
             const table = {};
-            //根据预设的得分率计算不同尝试次数对应的得分情况，并存储在表格对象中，供玩家参考和激励
-            //Object.entries()方法将RATE_MAP对象转换为一个包含键值对的数组
-            // 然后通过for...of循环遍历每个键值对，计算对应的得分并存储在table对象中，最终返回完整的得分表
             for (const [key, rate] of Object.entries(RATE_MAP)) {
                 table[key] = {
                     rate,
                     score: Math.round(base * rate),
                 };
             }
-
             return table;
         },
-        //计算当前游戏的名称，基于游戏模式和数据进行动态生成，提供给玩家明确的游戏类型信息
+
+        /**
+         * 动态生成当前游戏的名称（如 "经典-简单" 或 "自定义4位"）。
+         * @returns {string}
+         */
         gameName() {
             const mode = this.game['mode'];
             const data = this.game['data'];
-
             if (mode.Mode === 'classic' && mode.Level) {
                 return `经典-${CLASSIC_MAP[mode.Level].name}`;
             }
@@ -134,85 +203,135 @@ myApp({
             }
             return `经典-${CLASSIC_MAP.easy.name}`;
         },
-        //计算提交按钮是否应该被禁用，基于当前游戏状态和输入数据的完整性进行判断，确保玩家只能在有效输入时提交猜测
+
+        /**
+         * 判断“提交”按钮是否禁用。
+         * 当游戏已结束或输入位数不符合要求时禁用。
+         * @returns {boolean}
+         */
         isConfirmDisabled() {
             const state = this.game['state'];
             const data = this.game['data'];
-
-            if (state.Win || state.Lost) {
-                return true
-            }
+            if (state.Win || state.Lost) return true;
             return state.Input.length !== data.Len;
         },
-        //计算玩家剩余的提示次数，基于游戏提示的使用情况和最大限制进行计算，提醒玩家合理使用提示资源
+
+        /**
+         * 计算剩余提示次数。
+         * @returns {number}
+         */
         remainingHints() {
             const hint = this.game['hint'];
-
             return hint.max - hint.used;
         },
-
     },
 
     methods: {
-        //预加载图片资源，提升用户体验，确保在游戏过程中图片能够快速显示，避免加载延迟带来的不适感
+        // ---------- 资源预加载 ----------
+        /**
+         * 预加载所有图片资源（内置图片、爱莉希雅图片、经典模式图片）。
+         * 在组件 created 钩子中自动调用，确保游戏过程中图片能快速显示。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 组件创建时自动调用
+         * this.preloadImages();
+         */
         preloadImages() {
             this.preloadImg(IMAGE_SRC);
             this.preloadImg(ELYSIA_IMAGE_SRC);
             this.preloadImg(CLASSIC_IMG);
         },
-        //预加载图片资源的具体实现，创建Image对象并设置其src属性，触发浏览器的预加载机制，确保图片资源能够被提前加载到浏览器缓存中
+
+        /**
+         * 预加载指定资源对象中的所有图片。
+         * 通过创建 Image 对象并设置 src 属性触发浏览器预加载机制，
+         * 确保图片资源能够被提前加载到浏览器缓存中。
+         *
+         * @param {Object.<string, {src: string}>} SRC - 图片资源对象，值包含 src 属性
+         * @returns {void}
+         *
+         * @example
+         * // 预加载所有内置图片
+         * this.preloadImg(IMAGE_SRC);
+         */
         preloadImg(SRC) {
-            //Object.values()方法返回一个包含对象自身所有可枚举属性值的数组
-            // 通过forEach循环遍历每个属性值，创建一个新的Image对象，并将其src属性设置为对应的图片资源路径
-            // 触发浏览器的预加载机制，确保图片资源能够被提前加载到浏览器缓存中，提高游戏过程中图片显示的速度和流畅度
             Object.values(SRC).forEach(item => {
                 const img = new Image();
                 img.src = item.src;
             });
         },
 
-
-
-        //重置数据对象，清空目标对象的现有属性并赋予默认值，确保游戏状态能够正确初始化，避免数据残留导致的错误
+        // ---------- 数据重置 ----------
+        /**
+         * 重置目标对象为给定的默认值（深拷贝），清空原有属性。
+         * 使用 structuredClone 进行深拷贝，避免引用共享问题。
+         * 该方法是所有重置操作的基础工具。
+         *
+         * @param {Object} target   - 要重置的对象（如 this.game.state）
+         * @param {Object} defaults - 默认值对象（如 GAME_DEFAULTS.state）
+         * @returns {void}
+         *
+         * @example
+         * // 重置游戏状态为默认值
+         * this.resetData(this.game.state, GAME_DEFAULTS.state);
+         */
         resetData(target, defaults) {
-            //使用structuredClone方法创建一个默认值的深拷贝
-            // 确保在重置数据时不会受到原始默认值对象的影响，避免潜在的引用问题
             const cloned = structuredClone(defaults);
             for (const key in target) {
-                //delete操作符用于删除对象的属性，这里用于清空目标对象的现有属性，为新的数据赋值做好准备
-                // 不会留下任何旧数据，确保游戏状态能够正确初始化，避免数据残留导致的错误
                 delete target[key];
             }
-            //Object.assign()方法将克隆的默认值对象的属性复制到目标对象中，完成数据的重置和初始化
             Object.assign(target, cloned);
         },
 
-        //清空游戏状态，重置游戏模式、数据、状态和提示信息为默认值，为新游戏做好准备，确保玩家每次开始游戏时都能有一个干净的状态
+        /**
+         * 清空游戏所有状态（模式、数据、状态、提示），恢复到初始默认值。
+         * 遍历 game 对象的每个属性（mode/data/state/hint），
+         * 调用 resetData 进行重置。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 清空当前游戏状态，准备开始新游戏
+         * this.clearGame();
+         */
         clearGame() {
-            //通过循环遍历游戏对象的每个键，调用resetData方法将对应的数据项重置为默认值
-            // 确保游戏状态能够正确初始化，避免数据残留导致的错误
             for (const key in this.game) {
                 this.resetData(this.game[key], GAME_DEFAULTS[key]);
             }
         },
 
-        //清空战绩，提供给玩家明确的操作确认，确保数据安全
+        /**
+         * 清空历史记录（仅删除未锁定的记录，锁定记录保留），并提供二次确认。
+         * 使用 confirm 对话框确保用户确认删除操作，避免误删。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 用户点击"清空记录"按钮时调用
+         * this.clearRecord();
+         */
         clearRecord() {
-            //confirm()方法显示一个带有指定消息和确定/取消按钮的对话框，等待用户的响应
             if (!confirm('确定清空战绩？该操作不可逆 ')) {
                 return;
             }
-            //filter()方法创建一个新数组，包含所有通过测试的元素，这里用于保留被锁定的记录项，删除未锁定的记录项
-            //修改历史记录列表，确保玩家能够管理自己的战绩数据，提升用户体验
-            //不是变更原数组，而是创建一个新数组并赋值给history.recent，确保Vue能够正确检测到数据的变化并更新界面
-
             this.history.recent = this.history.recent.filter(i => i.locked);
             saveRecord(this.history.recent);
         },
 
-
-
-        //开始游戏，初始化游戏状态和提示信息，为玩家提供新的游戏体验
+        // ---------- 游戏控制 ----------
+        /**
+         * 开始新游戏。
+         * 重置状态和提示，生成目标数字，激活作弊键，切换到游戏面板。
+         * 这是玩家点击"开始游戏"时的核心入口方法。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 用户点击"开始游戏"按钮时调用
+         * this.startGame();
+         */
         startGame() {
             const state = this.game['state'];
             const data = this.game['data'];
@@ -236,7 +355,25 @@ myApp({
 
             this.showPanel('game');
         },
-        //显示指定面板，控制界面显示状态，确保玩家能够在不同的游戏阶段看到相应的界面内容
+
+        /**
+         * 切换面板显示（隐藏所有面板，仅显示指定面板）。
+         * 当切换到非游戏面板时，自动移除作弊键监听。
+         *
+         * @param {string} name - 面板名称，可选值：
+         *   - 'mode'    : 模式选择面板
+         *   - 'game'    : 游戏面板
+         *   - 'score'   : 得分面板
+         *   - 'replay'  : 回放面板
+         *   - 'settings': 设置面板
+         * @returns {void}
+         *
+         * @example
+         * // 切换到游戏面板
+         * this.showPanel('game');
+         * // 切换到设置面板
+         * this.showPanel('settings');
+         */
         showPanel(name) {
             for (const key in this.panel) {
                 this.panel[key] = false;
@@ -248,22 +385,48 @@ myApp({
             }
         },
 
-
-
-        //选择游戏模式，设置当前游戏的模式和相关数据，为玩家提供不同的游戏体验和挑战
+        // ---------- 模式选择 ----------
+        /**
+         * 选择游戏模式（经典/自定义），清空游戏并设置对应模式。
+         *
+         * @param {string} modeName - 模式名称，可选值：
+         *   - 'classic': 经典模式（预设难度）
+         *   - 'custom' : 自定义模式（玩家自设参数）
+         * @returns {void}
+         *
+         * @example
+         * // 切换到经典模式
+         * this.chooseMode('classic');
+         * // 切换到自定义模式
+         * this.chooseMode('custom');
+         */
         chooseMode(modeName) {
             const mode = this.game['mode'];
 
             this.clearGame();
             mode.Mode = modeName;
             if (modeName === 'classic') {
-                this.setGameClassic('easy');//默认值
+                this.setGameClassic('easy');
             }
             if (modeName === 'custom') {
                 this.setGameCustom();
             }
         },
-        //设置经典模式，基于选择的难度级别配置游戏数据，为玩家提供预设的经典游戏体验
+
+        /**
+         * 设置经典模式（预设难度级别）。
+         * 从 CLASSIC_MAP 中读取对应难度的配置参数。
+         *
+         * @param {string} level - 难度键名，可选值：
+         *   - 'easy'  : 简单（通常 4 位，允许重复）
+         *   - 'medium': 中等（通常 4 位，不允许重复）
+         *   - 'hard'  : 困难（通常 5 位，不允许重复）
+         * @returns {void}
+         *
+         * @example
+         * // 设置为困难模式
+         * this.setGameClassic('hard');
+         */
         setGameClassic(level) {
             const mode = this.game['mode'];
 
@@ -271,12 +434,37 @@ myApp({
             mode.Level = level;
             this.setGameData(classic);
         },
-        //设置自定义模式，基于玩家的输入配置游戏数据，为玩家提供个性化的游戏体验
+
+        /**
+         * 设置自定义模式（使用 customMap 中的参数）。
+         * customMap 包含玩家在设置界面填写的 len、repeat、purple、max 值。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 使用当前 customMap 的值设置游戏
+         * this.setGameCustom();
+         */
         setGameCustom() {
             const custom = this.customMap;
             this.setGameData(custom);
         },
-        //设置游戏数据，根据传入的游戏模式配置相应的数据项
+
+        /**
+         * 根据模式对象设置游戏数据（Len, Repeat, Purple, Max）。
+         * 将字符串类型的参数转换为对应的布尔值或数字。
+         *
+         * @param {Object} mode - 包含游戏参数的对象
+         * @param {string|number} mode.len    - 数字位数（如 '4' 或 4）
+         * @param {string|number} mode.repeat - 是否允许重复（'0'/'1' 或 0/1）
+         * @param {string|number} mode.purple - 是否启用紫色数字（'0'/'1' 或 0/1）
+         * @param {string|number} mode.max    - 最大尝试次数（如 '10' 或 10）
+         * @returns {void}
+         *
+         * @example
+         * // 使用经典模式配置设置游戏数据
+         * this.setGameData(CLASSIC_MAP.easy);
+         */
         setGameData(mode) {
             const data = this.game['data'];
             this.resetData(data, {
@@ -287,14 +475,32 @@ myApp({
             });
         },
 
-
-
-        //输入处理，确保玩家输入的有效性和格式正确，提供即时的输入反馈，提升用户体验
+        // ---------- 输入处理 ----------
+        /**
+         * 限制输入框只允许数字，过滤非数字字符。
+         * 绑定到输入框的 @input 事件，实时过滤用户输入。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 在模板中绑定
+         * <input @input="onInputGame" v-model="game.state.Input" />
+         */
         onInputGame() {
             const state = this.game['state'];
             state.Input = state.Input.replace(/[^\d]/g, '');
         },
-        //设置历史记录最大值输入处理，确保玩家输入的有效性和合理范围，提供即时的输入反馈，提升用户体验
+
+        /**
+         * 设置历史记录最大值输入处理，限制为最多两位数字，且不能以0开头。
+         * 若输入为空，则自动设为默认值 '10'。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 绑定到设置面板的输入框
+         * <input @input="onInputSettings" v-model="settingMap.historyMax" />
+         */
         onInputSettings() {
             this.settingMap.historyMax = this.settingMap.historyMax
                 .replace(/\D/g, '')
@@ -305,9 +511,18 @@ myApp({
             }
         },
 
-
-
-        //猜测处理，基于玩家的输入进行游戏逻辑判断，更新游戏状态和提示信息，提供即时的反馈，提升游戏体验
+        // ---------- 核心游戏逻辑 ----------
+        /**
+         * 提交猜测，检查输入与目标的匹配结果，更新状态并判断胜负。
+         * 若胜利或失败，则添加记录并移除作弊键。
+         * 这是游戏最核心的方法，包含了完整的猜数字判断逻辑。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 用户点击"提交"按钮时调用
+         * this.guess();
+         */
         guess() {
             const state = this.game['state'];
             const data = this.game['data'];
@@ -337,9 +552,18 @@ myApp({
             state.Input = '';
         },
 
-
-
-        //显示位置提示，基于玩家的请求提供特定位置的数字提示，更新游戏状态和提示信息，确保玩家能够合理使用提示资源，提升游戏体验
+        // ---------- 提示系统 ----------
+        /**
+         * 显示指定位置的数字提示，更新提示使用次数和结果列表。
+         * 若游戏已结束或未开始，或该位置已提示过，则给出相应消息。
+         * 提示信息会显示在游戏面板的消息区域。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 用户点击"提示"按钮时调用
+         * this.showPosHint();
+         */
         showPosHint() {
             const state = this.game['state'];
             const data = this.game['data'];
@@ -364,9 +588,19 @@ myApp({
             hint.used++;
         },
 
-
-
-        //作弊键，用于开发调试，允许通过特定按键快速查看答案，确保开发过程的便捷性和效率
+        // ---------- 作弊键（开发辅助） ----------
+        /**
+         * 注册键盘事件监听，按下 's' 键弹出提示显示当前目标答案。
+         * 仅用于开发调试，方便快速验证游戏逻辑。
+         * 在游戏面板中自动激活，切换到其他面板时自动移除。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 开始游戏时自动调用
+         * this.cheatKey();
+         * // 之后按键盘 's' 键即可显示答案
+         */
         cheatKey() {
             if (this.cheatHandler) {
                 document.removeEventListener("keydown", this.cheatHandler);
@@ -379,7 +613,17 @@ myApp({
             };
             document.addEventListener("keydown", this.cheatHandler);
         },
-        //移除作弊键，确保在不需要作弊功能时能够及时清除相关事件监听，避免潜在的安全风险和游戏体验问题
+
+        /**
+         * 移除作弊键的事件监听。
+         * 在游戏结束或切换到非游戏面板时调用，防止在非游戏状态下误触。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 游戏结束时自动调用
+         * this.removeCheatKey();
+         */
         removeCheatKey() {
             if (this.cheatHandler) {
                 document.removeEventListener("keydown", this.cheatHandler);
@@ -387,9 +631,17 @@ myApp({
             }
         },
 
-
-
-        //添加游戏记录，基于当前游戏的结果和相关数据生成新的记录项，更新历史记录列表，并根据设置的最大值进行管理，确保玩家的战绩能够被合理保存和展示
+        // ---------- 记录管理 ----------
+        /**
+         * 将当前游戏结果添加到历史记录，并根据锁状态和最大值截取记录列表，保存到本地。
+         * 锁定状态的记录不会被自动截取删除。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 游戏胜利或失败时自动调用
+         * this.addRecord();
+         */
         addRecord() {
             const state = this.game['state'];
             const data = this.game['data'];
@@ -407,6 +659,7 @@ myApp({
                 locked: false,
                 hint: hint.result,
             });
+
             const maxCount = Number(this.settingMap.historyMax);
             const locked = recent.filter(i => i.locked);
             const unlocked = recent.filter(i => !i.locked);
@@ -419,23 +672,57 @@ myApp({
             saveRecord(this.history.recent);
         },
 
-
-
-        //打开回放，基于玩家选择的历史记录项展示对应的游戏回放界面，确保玩家能够回顾和分享自己的游戏过程，提升游戏的互动性和社交性
+        /**
+         * 打开指定记录的回放界面。
+         * 将选中的历史记录赋值给 history.replay，并切换到回放面板。
+         *
+         * @param {Object} record - 历史记录对象，包含完整的对局信息
+         * @param {string} record.gameName - 游戏名称
+         * @param {number} record.attempt  - 尝试次数
+         * @param {Array}  record.list     - 猜测记录列表
+         * @param {Array}  record.hint     - 提示记录列表
+         * @param {number} record.score    - 最终得分
+         * @param {boolean} record.win     - 是否胜利
+         * @returns {void}
+         *
+         * @example
+         * // 用户点击历史记录项时调用
+         * this.openReplay(historyItem);
+         */
         openReplay(record) {
             this.history.replay = record;
             this.showPanel('replay');
         },
-        //切换锁定状态，允许玩家锁定或解锁特定的历史记录项，更新记录的锁定状态，并保存到本地，确保玩家能够管理自己的战绩数据，提升用户体验
+
+        /**
+         * 切换历史记录的锁定状态，并保存。
+         * 锁定的记录在清空记录和自动截取时不会被删除。
+         *
+         * @param {number} index - 记录在 recent 数组中的索引
+         * @returns {void}
+         *
+         * @example
+         * // 用户点击记录的锁定按钮时调用
+         * this.switchLock(0); // 锁定或解锁第一条记录
+         */
         switchLock(index) {
             const record = this.history.recent[index];
             record.locked = !record.locked;
             saveRecord(this.history.recent);
         },
 
-
-
-        //播放音乐，基于当前的音乐设置选择合适的音频资源进行播放，提供给玩家个性化的音频体验，提升游戏的沉浸感和乐趣
+        // ---------- 音画设置 ----------
+        /**
+         * 播放/暂停背景音乐。
+         * 若启用自定义音频（settingMap.setAudio 为 true），
+         * 则使用用户上传的音频源，否则使用内置音频。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 用户点击音乐播放/暂停按钮时调用
+         * this.playAudio();
+         */
         playAudio() {
             const audio = this.$refs.bgm;
             const i = this.Music.index;
@@ -461,53 +748,68 @@ myApp({
                 this.Music.isPlaying = true;
             }
         },
-        //播放图片，基于当前的图片设置选择合适的图像资源进行显示，提供给玩家个性化的视觉体验，提升游戏的沉浸感和乐趣
+
+        /**
+         * 更换背景图片，将所有 .panel 元素的背景图设置为选中的图片。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 用户选择内置图片时调用
+         * this.playImage();
+         */
         playImage() {
             const i = this.Image.index;
             const src = IMAGE_SRC[i].src;
             const panels = document.querySelectorAll('.panel');
-            //通过查询选择器获取所有具有.panel类的元素，并将选定的图像资源设置为这些元素的背景图片，
-            // 确保玩家选择的图像资源能够被正确加载和显示，提升游戏的视觉体验
             panels.forEach(panel => {
                 panel.style.backgroundImage = `url(${src})`;
             });
         },
 
-
-
-        //设置背景音乐，允许玩家通过文件输入选择自定义的音频资源进行游戏背景音乐，提供个性化的音频体验，提升游戏的沉浸感和乐趣
+        /**
+         * 处理用户上传自定义音频文件，生成临时 URL 并存储。
+         * 仅接受音频格式文件（audio/*），否则弹出提示。
+         *
+         * @param {Event} e - 文件输入 change 事件
+         * @param {File} e.target.files[0] - 用户选择的音频文件
+         * @returns {void}
+         *
+         * @example
+         * // 在模板中绑定
+         * <input type="file" accept="audio/*" @change="setBgAudio" />
+         */
         setBgAudio(e) {
             const file = e.target.files?.[0];
-
             if (!file || !file.type.startsWith('audio/')) {
                 alert("请选择有效音频❗");
                 return;
             }
-            //URL.createObjectURL()方法创建一个指向该文件的临时URL
-            // 允许在浏览器中直接访问和使用该文件，确保玩家选择的音频资源能够被正确加载和播放
-            //刷新后会失效，确保安全性和隐私保护
             this.Music.customSrc = URL.createObjectURL(file);
             this.Music.isPlaying = false;
         },
-        //设置背景图片，允许玩家通过文件输入选择自定义的图像资源进行游戏背景图片，提供个性化的视觉体验，提升游戏的沉浸感和乐趣
+
+        /**
+         * 处理用户上传自定义图片文件，读取为 Data URL 并应用为背景。
+         * 仅接受图片格式文件（image/*），否则弹出提示。
+         * 使用 FileReader 读取文件内容，读取完成后自动应用到所有面板。
+         *
+         * @param {Event} e - 文件输入 change 事件
+         * @param {File} e.target.files[0] - 用户选择的图片文件
+         * @returns {void}
+         *
+         * @example
+         * // 在模板中绑定
+         * <input type="file" accept="image/*" @change="setBgImage" />
+         */
         setBgImage(e) {
             const file = e.target.files?.[0];
-            //只读取一个文件,?.是可选链操作符，确保在没有文件被选择时不会抛出错误，而是返回undefined
-            //startsWith()方法用于判断文件类型是否以'image/'开头，确保玩家选择的文件是有效的图像资源，提升用户体验和游戏的沉浸感
             if (!file || !file.type.startsWith('image/')) {
                 alert("请选择有效图片❗");
                 return;
             }
 
-            const reader = new FileReader();//实例化一个读取器
-            //FileReader对象的onload事件在读取操作完成时触发，确保在文件被成功读取后能够获取到文件内容并进行相应的处理
-            //reader.result属性包含了读取操作的结果，这里是图像文件的Data URL，
-            // 可以直接用于设置背景图片，确保玩家选择的图像资源能够被正确加载和显示
-            //readAsDataURL()方法开始读取指定的文件，并在读取完成后触发onload事件，确保文件内容能够被正确读取和处理
-
-            //实例化FileReader对象，设置onload事件处理函数，在文件被成功读取后获取到文件内容并进行相应的处理
-            // 最后调用readAsDataURL()方法开始读取指定的图像文件，确保玩家选择的图像资源能够被正确加载和显示
-
+            const reader = new FileReader();
             reader.onload = () => {
                 const imgUrl = reader.result;
                 const panels = document.querySelectorAll('.panel');
@@ -517,8 +819,6 @@ myApp({
             };
             reader.readAsDataURL(file);
         },
-
     }
-
 
 }).mount('#app')
