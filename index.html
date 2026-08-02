@@ -267,6 +267,35 @@
             </div>
 
             <div class="item">
+                <label>字体大小：</label>
+                <select v-model="settingMap['font']['size']" @change="applyFont">
+                    <option value="14"> 小（14px） </option>
+                    <option value="16"> 标准（16px） </option>
+                    <option value="18"> 大（18px） </option>
+                    <option value="20"> 特大（20px） </option>
+                    <option value="22"> 超大（22px） </option>
+                </select>
+            </div>
+
+            <div class="item">
+                <label>字体样式：</label>
+                <select v-model="settingMap['font']['style']" @change="applyFont">
+                    <option value="default"> 默认 </option>
+                    <option value="songti"> 宋体 </option>
+                    <option value="heiti"> 黑体 </option>
+                    <option value="kaiti"> 楷体 </option>
+                    <option value="lishu"> 隶书 </option>
+                    <option value="xingkai"> 华文行楷 </option>
+                    <option value="fangsong"> 仿宋 </option>
+                </select>
+            </div>
+
+            <div class="item">
+                <label>字体颜色：</label>
+                <input type="color" v-model="settingMap['font']['color']" @input="applyFont">
+            </div>
+
+            <div class="item">
                 <label>颜色判断机制：</label>
                 <label for="dynamic">{{settingMap['setDynamic']?'动态':'非动态'}}</label>
                 <input type="checkbox" name="dynamic" id="dynamic" v-model="settingMap['setDynamic']">

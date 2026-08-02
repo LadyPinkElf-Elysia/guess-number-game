@@ -132,6 +132,21 @@ myApp({
                 setDynamic: false,
                 setAudio: false,
                 setImage: false,
+                font: {
+                    size: '16',
+                    style: 'default',
+                    color: '#ff1493',
+                },
+            },
+
+            fontStyleMap: {
+                'default': "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif",
+                'songti': "SimSun, '宋体', serif",
+                'heiti': "SimHei, '黑体', sans-serif",
+                'kaiti': "KaiTi, '楷体', serif",
+                'lishu': "LiSu, '隶书', serif",
+                'xingkai': "'STXingkai', '华文行楷', cursive",
+                'fangsong': "FangSong, '仿宋', serif",
             },
         }
     },
@@ -144,6 +159,8 @@ myApp({
             this.history.recent = [];
             localStorage.removeItem('RecentGames');
         }
+        this.applyFont();
+
         this.preloadImages();
     },
 
@@ -511,6 +528,30 @@ myApp({
             if (!this.settingMap.historyMax) {
                 this.settingMap.historyMax = '10';
             }
+        },
+        /**
+         * 应用字体设置（字号、字体样式、字体颜色）到整个游戏界面。
+         * 通过覆盖 :root 的 CSS 变量实现：
+         *   --font-size-base / --font-size-sm → 字号
+         *   --font-family                      → 字体样式
+         *   --pink                             → 字体颜色
+         * 绑定到设置面板的字号/字体样式/字体颜色控件的 @input / @change 事件。
+         *
+         * @returns {void}
+         *
+         * @example
+         * // 切换字号或字体样式或字体颜色时自动调用
+         * this.applyFont();
+         */
+        applyFont() {
+            const font = this.settingMap.font;
+            const size = Number(font.size);
+            const family = this.fontStyleMap[font.style] || this.fontStyleMap['default'];
+            const root = document.documentElement;
+            root.style.setProperty('--font-size-base', size + 'px');
+            root.style.setProperty('--font-size-sm', Math.max(size - 2, 10) + 'px');
+            root.style.setProperty('--font-family', family);
+            root.style.setProperty('--pink', font.color);
         },
 
         // ---------- 核心游戏逻辑 ----------
